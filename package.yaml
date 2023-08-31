@@ -1,0 +1,21 @@
+name: chip80
+version: 0.1.0
+category: game
+license: GPL-3
+
+extra-source-files:
+  - README.md
+
+dependencies:
+  - base
+  - z80
+  - bytestring
+  - filepath
+  - directory
+
+source-dirs:
+  - src
+
+executables:
+  homelab-games:
+    main: main.hs
