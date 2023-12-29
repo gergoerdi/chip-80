@@ -13,8 +13,8 @@ import Data.Char
 
 -- | `baseAddr` should be 12-bit-aligned
 -- | `IY`: PC
-cpu :: Location -> Z80ASM
-cpu baseAddr = mdo
+cpu_ :: Location -> Location -> Z80ASM
+cpu_ baseAddr vidAddr = mdo
 
     -- Fetch next instruction
     ld B [IY]
@@ -23,22 +23,23 @@ cpu baseAddr = mdo
     inc IY
 
     ld A B
-    Z80.and 0xf0
     replicateM_ 4 rrca
+    Z80.and 0x0f
     sla A
 
     ld D 0
     ld E A
     ld IX ops
     add IX DE
-    ld E [IX]
+    ld L [IX]
     inc IX
-    ld D [IX]
+    ld H [IX]
     code [0xe9] -- jp [HL]
 
     ptr <- labelled $ dw [0]
     regs <- labelled $ db $ replicate 16 0
     let flag = regs + 0xf
+    timer <- labelled $ db [0]
     stack <- labelled $ dw $ replicate 24 0
     sp <- labelled $ dw [stack]
 
@@ -46,8 +47,11 @@ cpu baseAddr = mdo
         ld A C
 
         cp 0xe_0
-        unlessFlag NZ do
-            -- ClearScreen
+        unlessFlag NZ do -- ClearScreen
+            ld IX vidAddr
+            decLoopB 256 do
+                ld [IX] 0
+                inc IX
             ret
         cp 0xe_e
         ret NZ
@@ -274,8 +278,63 @@ cpu baseAddr = mdo
     opC <- labelled do -- TODO: Randomize r1 imm
         pure ()
 
-    opD <- labelled do -- TODO: DrawSprite
-        pure ()
+    opD <- labelled do -- DrawSprite r1 r2 n
+        ld A C
+        Z80.and 0x0f
+        ld H A
+        call loadR1toA
+        call loadR2toC
+        ld B H
+
+        -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
+
+        -- Calculate target offset
+        push AF
+        ld D 0
+        replicateM_ 3 $ sla C
+        replicateM_ 3 $ srl A
+        add A C
+        ld E A
+        ld HL vidAddr
+        add HL DE
+
+        -- Calculate sub-byte bit offset
+        pop AF
+        Z80.and 0b111
+
+        ld IX [ptr]
+        -- `IX`: source (sprite data)
+        -- `HL`: target (video buffer)
+        withLabel \loop -> do
+            push AF
+
+            ld D [IX]
+            ld E 0
+            inc IX
+            skippable \end -> loopForever do
+                cp 0
+                jp Z end
+                srl D
+                rr E
+                dec A
+
+            ld C [HL]
+            ld A D
+            Z80.xor C
+            ld [HL] A
+
+            inc HL
+            ld C [HL]
+            ld A E
+            Z80.xor C
+            ld [HL] A
+
+            ld DE 7
+            add HL DE
+
+            pop AF
+            djnz loop
+        ret
 
     opE <- labelled do -- TODO: SkipKey r1
         -- ld A C
@@ -285,17 +344,30 @@ cpu baseAddr = mdo
 
     opF <- labelled mdo
         ld A C
-        cp 0x07 -- GetTimer r1
-        cp 0x0a -- WaitKey r1
-        cp 0x15 -- LoadTimer r1
-        cp 0x18 -- LoadSound r1
-        cp 0x1e -- AddPtr r1
+        cp 0x07
+        jp Z getTimer
+        cp 0x0a
+        jp Z waitKey
+        cp 0x15
+        jp Z loadTimer
+        cp 0x18 -- TODO: LoadSound r1
+        cp 0x1e
         jp Z addPtr
-        cp 0x29 -- LoadHex r1
-        cp 0x33 -- StoreBCD r1
-        cp 0x55 -- StoreRegs r1
-        cp 0x65 -- LoadRegs r1
+        cp 0x29 -- TODO: LoadHex r1
+        cp 0x33 -- TODO: StoreBCD r1
+        cp 0x55 -- TODO: StoreRegs r1
+        cp 0x65 -- TODO: LoadRegs r1
         ret
+
+        getTimer <- labelled do
+            call indexR1toIX
+            ldVia A [IX] [timer]
+            ret
+
+        loadTimer <- labelled do
+            call loadR1toA
+            ld [timer] A
+            ret
 
         addPtr <- labelled do
             ldVia A L [ptr + 0]
@@ -307,6 +379,9 @@ cpu baseAddr = mdo
             inc H
             ldVia A [ptr + 1] H
             ret
+
+        waitKey <- labelled do
+            loopForever $ pure ()
 
         pure ()
 

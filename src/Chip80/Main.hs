@@ -22,26 +22,27 @@ pictureHeight = 32
 
 game :: Z80ASM
 game = mdo
-    -- ld HL videoStart
-    -- ld C 0
-    -- decLoopB 16 do
-    --     ld D B
-    --     decLoopB 16 do
-    --         ld [HL] C
-    --         inc C
-    --         inc HL
-    --     ld B D
-    --     ld DE $ numCols - 16
-    --     add HL DE
+    ld HL prog
+    ld IY 0x7200
+    decLoopB (3 * 2) do
+        ld A [HL]
+        inc HL
+        ld [IY] A
+        inc IY
 
-    -- ld IX charmap
-    -- decLoopB 16 do
-    --     ldVia A [HL] [IX]
-    --     inc IX
-    --     inc HL
+    ld HL sprite
+    ld IY 0x7f00
+    decLoopB 8 do
+        ld A [HL]
+        inc HL
+        ld [IY] A
+        inc IY
+
+    ld IY 0x7200
+    replicateM_ 3 $ call cpu
 
     ld HL $ videoStart + numCols * 8
-    ld IX pict
+    ld IX vidBuf
     decLoopB (pictureHeight `div` 2) do
         ld D 0
 
@@ -79,6 +80,25 @@ game = mdo
         add HL DE
 
     loopForever $ pure ()
+
+    vidBuf <- labelled $ db $ replicate (8 * 32) 0
+    cpu <- labelled $ cpu_ 0x7000 vidBuf
+    prog <- labelled $ db
+      [ 0xaf, 0x00  -- LoadPtr F00
+      , 0x00, 0xe0  -- ClearScreen
+      , 0xd0, 0x18  -- DrawSprite V0 V1 8
+      ]
+
+    sprite <- labelled $ db
+        [ 0b0000_0000
+        , 0b0000_0000
+        , 0b0011_1100
+        , 0b0000_0100
+        , 0b0000_1000
+        , 0b0001_0000
+        , 0b0001_0000
+        , 0b0000_0000
+        ]
 
     charmap <- labelled $ db
         [ 0x00 -- 00_00
