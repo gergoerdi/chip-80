@@ -289,7 +289,7 @@ cpu_ Platform{..} = mdo
         -- dbgA
         ld L C
         ld [ptr] HL
-        ld A C
+        -- ld A C
         -- dbgA
         -- cr
         ret
@@ -339,30 +339,12 @@ cpu_ Platform{..} = mdo
 
         ld IX [ptr]
 
-        -- push AF
-        -- space
-        -- space
-        -- push HL
-        -- push IX
-        -- pop HL
-        -- ld A H
-        -- dbgA
-        -- ld A L
-        -- dbgA
-        -- cr
-        -- pop HL
-        -- pop AF
-
         -- `IX`: source (sprite data)
         -- `HL`: target (video buffer)
         withLabel \loop -> do
             push AF
 
             ld D [IX]
-            -- push AF
-            -- ld A D
-            -- dbgA
-            -- pop AF
 
             ld E 0
             inc IX

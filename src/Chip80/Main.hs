@@ -35,46 +35,6 @@ game image = mdo
         call cpu
         pop BC
 
-    -- loopForever $ pure ()
-
-    ld HL videoStart
-    ld IX vidBuf
-    decLoopB (pictureHeight `div` 2) do
-        ld D 0
-
-        push BC
-        decLoopB (pictureWidth `div` 8) do
-            push BC
-            decLoopB 4 do
-                ld E 0
-
-                ld A [IX + 0]
-                rlca
-                rl E
-                rlca
-                rl E
-                ld [IX + 0] A
-
-                ld A [IX + fromIntegral (pictureWidth `div` 8)]
-                rlca
-                rl E
-                rlca
-                rl E
-                ld [IX + fromIntegral (pictureWidth `div` 8)] A
-
-                ld IY charmap
-                add IY DE
-                ldVia A [HL] [IY]
-                inc HL
-            pop BC
-            inc IX
-        pop BC
-
-        ld DE $ fromIntegral pictureWidth `div` 8
-        add IX DE
-        ld DE $ numCols - (fromIntegral pictureWidth `div` 2)
-        add HL DE
-
     loopForever $ pure ()
 
     vidBuf <- labelled $ db $ replicate (8 * 32) 0
@@ -107,19 +67,10 @@ game image = mdo
     ld B 0x00
     spriteH <- subtract 1 <$> label
     do
-        -- push AF
-        -- dbgA
-        -- ld A C
-        -- dbgA
-        -- cr
-        -- pop AF
-
-
         -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
-        ld HL videoStart
-        ld IX vidBuf
 
-        -- Calculate starting source byte
+        -- Calculate starting source byte into IX
+        ld IX vidBuf
         push AF
         replicateM_ 3 rrca
         Z80.and 0x07
@@ -131,7 +82,8 @@ game image = mdo
         ld E A
         add IX DE
 
-        -- Calculate starting target byte
+        -- Calculate starting target byte into HL
+        ld HL videoStart
 
         -- Multiply Y/2 by 40
         replicateM_ 4 $ sra C
@@ -148,19 +100,7 @@ game image = mdo
         Z80.and 0x1f
         Z80.add A E
         ld E A
-        -- ld D 0
-        -- replicateM_ 2 $ do
-        --     sla C
-        --     rl D
-        -- Z80.or C
-        -- ld E A
         add HL DE
-
-        ld A D
-        dbgA
-        ld A E
-        dbgA
-        cr
 
         push IY
         -- srl B
