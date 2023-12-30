@@ -355,7 +355,8 @@ cpu_ baseAddr vidAddr = mdo
         jp Z addPtr
         cp 0x29 -- TODO: LoadHex r1
         cp 0x33 -- TODO: StoreBCD r1
-        cp 0x55 -- TODO: StoreRegs r1
+        cp 0x55
+        jp Z storeRegs
         cp 0x65 -- TODO: LoadRegs r1
         ret
 
@@ -370,19 +371,28 @@ cpu_ baseAddr vidAddr = mdo
             ret
 
         addPtr <- labelled do
-            ldVia A L [ptr + 0]
-            ldVia A H [ptr + 1]
             call loadR1toA
+            ld HL [ptr]
             add A L
-            ldVia A [ptr + 0] L
-            ret NC
-            inc H
-            ldVia A [ptr + 1] H
+            ld L A
+            unlessFlag NC $ inc H
+            ld [ptr] HL
             ret
 
         waitKey <- labelled do
             loopForever $ pure ()
 
+        storeRegs <- labelled do
+            ld A B
+            Z80.and 0x0f
+            ld C A
+            ld B 0
+            inc BC
+            ld HL regs
+            ld DE [ptr]
+            ldir
+            ld [ptr] DE
+            ret
         pure ()
 
     ops <- labelled $ dw
