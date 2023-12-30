@@ -85,25 +85,27 @@ game image = mdo
         -- Calculate starting target byte into HL
         ld HL videoStart
 
-        -- Multiply Y/2 by 40
-        replicateM_ 4 $ sra C
+        -- Add Y/2 * 40 to HL
+        replicateM_ 4 $ srl C
         ld DE 40
         skippable \end -> loopForever do
             srl C
-            jp Z end
             unlessFlag NC $ add HL DE
+            jp Z end
             sla E
             rl D
 
+        -- Add X / 2 to HL, aligned to 8 pixels since IX points to a whole byte
         pop AF
-        replicateM_ 1 $ rrca
-        Z80.and 0x1f
-        Z80.add A E
+        replicateM_ 1 rrca
+        Z80.and 0x1c
+        ld D 0
         ld E A
         add HL DE
 
         push IY
-        -- srl B
+        inc B
+        srl B
         withLabel \loopRow -> do
             ld D 0
 
