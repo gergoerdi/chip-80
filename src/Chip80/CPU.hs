@@ -11,16 +11,43 @@ import Control.Monad
 import Data.Bits
 import Data.Char
 
+dbgA :: Z80ASM
+dbgA = do
+    call 0x01a5
+
+cr = do
+    ld A 0x0d
+    rst 0x28
+
+space = do
+    ld A 0x20
+    rst 0x28
+
+data Platform = Platform
+    { baseAddr, vidAddr :: Location
+    , spritePre :: Location
+    , spritePost :: Location
+    , clearScreen :: Location
+    }
+
 -- | `baseAddr` should be 12-bit-aligned
 -- | `IY`: PC
-cpu_ :: Location -> Location -> Z80ASM
-cpu_ baseAddr vidAddr = mdo
+cpu_ :: Platform -> Z80ASM
+cpu_ Platform{..} = mdo
 
     -- Fetch next instruction
     ld B [IY]
     inc IY
+
+    -- ld A B
+    -- dbgA
+
     ld C [IY]
     inc IY
+
+    -- ld A C
+    -- dbgA
+    -- cr
 
     ld A B
     replicateM_ 4 rrca
@@ -46,14 +73,14 @@ cpu_ baseAddr vidAddr = mdo
     op0 <- labelled do
         ld A C
 
-        cp 0xe_0
+        cp 0xe0
         unlessFlag NZ do -- ClearScreen
             ld IX vidAddr
             decLoopB 256 do
                 ld [IX] 0
                 inc IX
-            ret
-        cp 0xe_e
+            jp clearScreen
+        cp 0xee
         ret NZ
 
         -- Ret
@@ -252,12 +279,19 @@ cpu_ baseAddr vidAddr = mdo
         jp skip
 
     opA <- labelled do -- LoadPtr
+        -- space
+        -- space
+
         ld A B
         Z80.and 0x0f
         Z80.or addressMask
         ld H A
+        -- dbgA
         ld L C
         ld [ptr] HL
+        ld A C
+        -- dbgA
+        -- cr
         ret
 
     opB <- labelled do -- JumpPlusV0
@@ -287,6 +321,7 @@ cpu_ baseAddr vidAddr = mdo
         ld B H
 
         -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
+        call spritePre
 
         -- Calculate target offset
         push AF
@@ -303,12 +338,32 @@ cpu_ baseAddr vidAddr = mdo
         Z80.and 0b111
 
         ld IX [ptr]
+
+        -- push AF
+        -- space
+        -- space
+        -- push HL
+        -- push IX
+        -- pop HL
+        -- ld A H
+        -- dbgA
+        -- ld A L
+        -- dbgA
+        -- cr
+        -- pop HL
+        -- pop AF
+
         -- `IX`: source (sprite data)
         -- `HL`: target (video buffer)
         withLabel \loop -> do
             push AF
 
             ld D [IX]
+            -- push AF
+            -- ld A D
+            -- dbgA
+            -- pop AF
+
             ld E 0
             inc IX
             skippable \end -> loopForever do
@@ -334,7 +389,8 @@ cpu_ baseAddr vidAddr = mdo
 
             pop AF
             djnz loop
-        ret
+        -- cr
+        jp spritePost
 
     opE <- labelled do -- TODO: SkipKey r1
         -- ld A C

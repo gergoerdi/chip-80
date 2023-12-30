@@ -1,4 +1,4 @@
-{-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards #-}
+{-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Chip80.Main (game) where
@@ -13,6 +13,7 @@ import Data.Int
 import Control.Monad
 import Data.Bits
 import Data.Char
+import qualified Data.ByteString as BS
 
 pictureWidth :: Word8
 pictureWidth = 64
@@ -20,28 +21,23 @@ pictureWidth = 64
 pictureHeight :: Word8
 pictureHeight = 32
 
-game :: Z80ASM
-game = mdo
+game :: BS.ByteString -> Z80ASM
+game image = mdo
+    -- Load program into CHIP-8 RAM
     ld HL prog
-    ld IY 0x7200
-    decLoopB (3 * 2) do
-        ld A [HL]
-        inc HL
-        ld [IY] A
-        inc IY
-
-    ld HL sprite
-    ld IY 0x7f00
-    decLoopB 8 do
-        ld A [HL]
-        inc HL
-        ld [IY] A
-        inc IY
+    ld DE 0x7200
+    ld BC (0x1000 - 0x200)
+    ldir
 
     ld IY 0x7200
-    replicateM_ 3 $ call cpu
+    decLoopB 35 do
+        push BC
+        call cpu
+        pop BC
 
-    ld HL $ videoStart + numCols * 8
+    -- loopForever $ pure ()
+
+    ld HL videoStart
     ld IX vidBuf
     decLoopB (pictureHeight `div` 2) do
         ld D 0
@@ -82,23 +78,135 @@ game = mdo
     loopForever $ pure ()
 
     vidBuf <- labelled $ db $ replicate (8 * 32) 0
-    cpu <- labelled $ cpu_ 0x7000 vidBuf
-    prog <- labelled $ db
-      [ 0xaf, 0x00  -- LoadPtr F00
-      , 0x00, 0xe0  -- ClearScreen
-      , 0xd0, 0x18  -- DrawSprite V0 V1 8
-      ]
+    cpu <- labelled $ cpu_ Platform{ baseAddr = 0x7000, vidAddr = vidBuf, spritePre, spritePost, clearScreen }
+    prog <- labelled $ db image
 
-    sprite <- labelled $ db
-        [ 0b0000_0000
-        , 0b0000_0000
-        , 0b0011_1100
-        , 0b0000_0100
-        , 0b0000_1000
-        , 0b0001_0000
-        , 0b0001_0000
-        , 0b0000_0000
-        ]
+    clearScreen <- labelled do
+        ld HL videoStart
+        withLabel \loop -> do
+            ld [HL] 0x20
+            inc HL
+            ld A H
+            cp 0xc4
+            jp NZ loop
+        ret
+
+    spritePre <- labelled do
+        ld [spriteX] A
+        push AF
+        ldVia A [spriteY] C
+        ldVia A [spriteH] B
+        pop AF
+        ret
+
+    spritePost <- label
+    ld A 0x00
+    spriteX <- subtract 1 <$> label
+    ld C 0x00
+    spriteY <- subtract 1 <$> label
+    ld B 0x00
+    spriteH <- subtract 1 <$> label
+    do
+        -- push AF
+        -- dbgA
+        -- ld A C
+        -- dbgA
+        -- cr
+        -- pop AF
+
+
+        -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
+        ld HL videoStart
+        ld IX vidBuf
+
+        -- Calculate starting source byte
+        push AF
+        replicateM_ 3 rrca
+        Z80.and 0x07
+        replicateM_ 3 $ sla C
+        Z80.or C
+        -- Normalize to even rows
+        Z80.and 0b1111_0111
+        ld D 0
+        ld E A
+        add IX DE
+
+        -- Calculate starting target byte
+
+        -- Multiply Y/2 by 40
+        replicateM_ 4 $ sra C
+        ld DE 40
+        skippable \end -> loopForever do
+            srl C
+            jp Z end
+            unlessFlag NC $ add HL DE
+            sla E
+            rl D
+
+        pop AF
+        replicateM_ 1 $ rrca
+        Z80.and 0x1f
+        Z80.add A E
+        ld E A
+        -- ld D 0
+        -- replicateM_ 2 $ do
+        --     sla C
+        --     rl D
+        -- Z80.or C
+        -- ld E A
+        add HL DE
+
+        ld A D
+        dbgA
+        ld A E
+        dbgA
+        cr
+
+        push IY
+        -- srl B
+        withLabel \loopRow -> do
+            ld D 0
+
+            push BC
+            decLoopB 2 do
+                push BC
+                decLoopB 4 do
+                    -- Calculate into E the next 2x2 bit pattern
+                    ld E 0
+
+                    ld A [IX + 0]
+                    rlca
+                    rl E
+                    rlca
+                    rl E
+                    ld [IX + 0] A
+
+                    ld A [IX + fromIntegral (pictureWidth `div` 8)]
+                    rlca
+                    rl E
+                    rlca
+                    rl E
+                    ld [IX + fromIntegral (pictureWidth `div` 8)] A
+
+                    -- Convert bit pattern into character
+                    ld IY charmap
+                    add IY DE
+                    ldVia A [HL] [IY]
+                    inc HL
+                pop BC
+                inc IX
+            pop BC
+
+            ld DE $ fromIntegral pictureWidth `div` 8 + (fromIntegral pictureWidth `div` 8 - 2)
+            add IX DE
+            ld DE $ numCols - 8
+            add HL DE
+
+            djnz loopRow
+
+        pop IY
+        ret
+
 
     charmap <- labelled $ db
         [ 0x00 -- 00_00
@@ -118,40 +226,5 @@ game = mdo
         , 0x16 -- 11_10
         , 0xff -- 11_11
         ]
-
-    pict <- labelled $ db $
-      [ 0b0000_0000, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0101_0100, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0010_1000, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0101_0100, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0010_1000, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0101_0100, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0000_0000, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_0110, 0b1010_0100, 0b0100_0110, 0b1110_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_1000, 0b1010_1010, 0b1010_1000, 0b1000_0000
-      , 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_1000, 0b1110_1010, 0b1010_0100, 0b1100_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_1000, 0b1010_1010, 0b1010_0010, 0b1000_0000
-      , 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0110, 0b1010_0100, 0b0100_1100, 0b1110_0000
-      , 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0110, 0b0100_1100, 0b1100_0000, 0b0100_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_1000, 0b1010_1010, 0b1010_0000, 0b1100_0000
-      , 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_1000, 0b1110_1100, 0b1010_0000, 0b0100_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_1000, 0b1010_1010, 0b1010_0000, 0b0100_0000
-      , 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_0110, 0b1010_1010, 0b1100_0000, 0b1110_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b1101_0110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b1010_1010, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b1111_1110, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      , 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000, 0b0000_0000
-      ]
 
     pure ()

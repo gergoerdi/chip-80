@@ -18,7 +18,8 @@ import System.Directory
 
 main :: IO ()
 main = do
-    emit "_build/chip80" $ org 20000 Chip80.game
+    image <- BS.readFile "/home/cactus/prog/rust/chirp8-sdl/hidden.ch8"
+    emit "_build/chip80" $ org 20000 $ Chip80.game image
 
 emit :: String -> ASMBlock -> IO ()
 emit name block = do
