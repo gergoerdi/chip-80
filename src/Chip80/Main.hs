@@ -23,13 +23,16 @@ pictureHeight = 32
 
 game :: BS.ByteString -> Z80ASM
 game image = mdo
+    let baseAddr = 0x7000
+    ld SP $ baseAddr - 1
+
     -- Load program into CHIP-8 RAM
     ld HL prog
-    ld DE 0x7200
+    ld DE $ baseAddr + 0x200
     ld BC (0x1000 - 0x200)
     ldir
 
-    ld IY 0x7200
+    ld IY $ baseAddr + 0x200
     decLoopB 35 do
         push BC
         call cpu
