@@ -310,7 +310,7 @@ cpu_ Platform{..} = mdo
         ret
 
     opC <- labelled do -- TODO: Randomize vx imm
-        pure ()
+        ret
 
     opD <- labelled do -- DrawSprite vx vy n
         ld A C
@@ -388,16 +388,31 @@ cpu_ Platform{..} = mdo
         jp Z waitKey
         cp 0x15
         jp Z loadTimer
-        cp 0x18 -- TODO: LoadSound r1
+        cp 0x18
+        jp Z loadSound
         cp 0x1e
         jp Z addPtr
-        cp 0x29 -- TODO: LoadHex r1
-        cp 0x33 -- TODO: StoreBCD r1
+        cp 0x29
+        jp Z loadHex
+        cp 0x33
+        jp Z storeBCD
         cp 0x55
         jp Z storeRegs
-        cp 0x65 -- TODO: LoadRegs r1
+        cp 0x65
+        jp Z loadRegs
         ret
 
+        loadSound <- labelled do
+            ret
+
+        loadHex <- labelled do
+            call indexVXtoIX
+            -- TODO
+            ret
+
+        storeBCD <- labelled do
+            -- TODO
+            ret
 
         getTimer <- labelled do
             call indexVXtoIX
@@ -419,7 +434,8 @@ cpu_ Platform{..} = mdo
             ret
 
         waitKey <- labelled do
-            loopForever $ pure ()
+            call indexVXtoIX
+            ret
 
         storeRegs <- labelled do
             ld A B
@@ -429,6 +445,18 @@ cpu_ Platform{..} = mdo
             inc BC
             ld HL regs
             ld DE [ptr]
+            ldir
+            ld [ptr] DE
+            ret
+
+        loadRegs <- labelled do
+            ld A B
+            Z80.and 0x0f
+            ld C A
+            ld B 0
+            inc BC
+            ld DE regs
+            ld HL [ptr]
             ldir
             ld [ptr] DE
             ret
