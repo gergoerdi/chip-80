@@ -35,7 +35,7 @@ game image = mdo
     ldir
 
     ld IY $ baseAddr + 0x200
-    decLoopB 35 do
+    loopForever do
         push BC
         call cpu
         pop BC
@@ -109,8 +109,8 @@ game image = mdo
         add HL DE
 
         push IY
-        inc B
         srl B
+        inc B
         withLabel \loopRow -> do
             ld D 0
 
