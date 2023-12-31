@@ -115,7 +115,7 @@ cpu_ Platform{..} = mdo
         ld [sp] HL
         jp op1
 
-    indexR1toIX <- labelled do
+    indexVXtoIX <- labelled do
         ld A B
         Z80.and 0x0f
         ld IX regs
@@ -124,12 +124,12 @@ cpu_ Platform{..} = mdo
         add IX DE
         ret
 
-    loadR1toA <- labelled do
-        call indexR1toIX
+    loadVXtoA <- labelled do
+        call indexVXtoIX
         ld A [IX]
         ret
 
-    loadR2toC <- labelled do
+    loadVYtoC <- labelled do
         push AF
         ld A C
         replicateM_ 4 rrca
@@ -147,35 +147,35 @@ cpu_ Platform{..} = mdo
         add IY DE
         ret
 
-    op3 <- labelled do -- SkipEqImm r1 imm
-        call loadR1toA
+    op3 <- labelled do -- SkipEqImm vx imm
+        call loadVXtoA
 
         cp C
         ret NZ
         jp skip
 
-    op4 <- labelled do -- SkipNEqImm r1 imm
-        call loadR1toA
+    op4 <- labelled do -- SkipNEqImm vx imm
+        call loadVXtoA
 
         cp C
         ret Z
         jp skip
 
-    op5 <- labelled do  -- SkipEqReg r1 r2
-        call loadR1toA
-        call loadR2toC
+    op5 <- labelled do  -- SkipEqReg vx vy
+        call loadVXtoA
+        call loadVYtoC
 
         cp C
         ret NZ
         jp skip
 
-    op6 <- labelled do -- LoadImm r1 imm
-        call indexR1toIX
+    op6 <- labelled do -- LoadImm vx imm
+        call indexVXtoIX
         ld [IX] C
         ret
 
-    op7 <- labelled do -- AddImm r1 imm
-        call loadR1toA
+    op7 <- labelled do -- AddImm vx imm
+        call loadVXtoA
         add A C
         ld [IX] A
         ret
@@ -186,9 +186,9 @@ cpu_ Platform{..} = mdo
         sla A
         ld H 0
         ld L A
-        call loadR1toA
+        call loadVXtoA
         push IX
-        call loadR2toC
+        call loadVYtoC
         pop IX
         ld DE funs
         add HL DE
@@ -270,9 +270,9 @@ cpu_ Platform{..} = mdo
           ]
         pure ()
 
-    op9 <- labelled do  -- SkipNEqReg r1 r2
-        call loadR1toA
-        call loadR2toC
+    op9 <- labelled do  -- SkipNEqReg vx vy
+        call loadVXtoA
+        call loadVYtoC
 
         cp C
         ret Z
@@ -309,15 +309,15 @@ cpu_ Platform{..} = mdo
         pop IX
         ret
 
-    opC <- labelled do -- TODO: Randomize r1 imm
+    opC <- labelled do -- TODO: Randomize vx imm
         pure ()
 
-    opD <- labelled do -- DrawSprite r1 r2 n
+    opD <- labelled do -- DrawSprite vx vy n
         ld A C
         Z80.and 0x0f
         ld H A
-        call loadR1toA
-        call loadR2toC
+        call loadVXtoA
+        call loadVYtoC
         ld B H
 
         -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
@@ -374,7 +374,7 @@ cpu_ Platform{..} = mdo
         -- cr
         jp spritePost
 
-    opE <- labelled do -- TODO: SkipKey r1
+    opE <- labelled do -- TODO: SkipKey vx
         -- ld A C
         -- cp 0x9e -- Skip if key is pressed
         -- jp skip
@@ -398,18 +398,19 @@ cpu_ Platform{..} = mdo
         cp 0x65 -- TODO: LoadRegs r1
         ret
 
+
         getTimer <- labelled do
-            call indexR1toIX
+            call indexVXtoIX
             ldVia A [IX] [timer]
             ret
 
         loadTimer <- labelled do
-            call loadR1toA
+            call loadVXtoA
             ld [timer] A
             ret
 
         addPtr <- labelled do
-            call loadR1toA
+            call loadVXtoA
             ld HL [ptr]
             add A L
             ld L A
