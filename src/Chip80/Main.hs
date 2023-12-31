@@ -28,6 +28,12 @@ game image = mdo
     let baseAddr = 0x7000
     ld SP $ baseAddr - 1
 
+    -- Load hex font
+    ld DE baseAddr
+    ld HL hex
+    ld BC $ 16 * 8
+    ldir
+
     -- Load program into CHIP-8 RAM
     ld HL prog
     ld DE $ baseAddr + 0x200
@@ -168,6 +174,10 @@ game image = mdo
 
     charmap <- labelled $ db charmapHL2
 
+    hex <- labelled $ db $
+      let rowToBits = foldl (\b c -> let b' = b `shiftL` 1 in if c == ' ' then b' else setBit b' 0) 0
+          pixelsOf rows = [rowToBits row | row <- rows] ++ [0x00, 0x00, 0x00]
+      in foldMap pixelsOf font
     pure ()
 
 charmapHL4 :: [Word8]
@@ -232,4 +242,104 @@ keymapHL2 =
     , (0x3abf, 2) -- R
     , (0x3a3f, 6) -- F
     , (0x3abf, 6) -- V
+    ]
+
+font :: [[String]]
+font =
+    [ [ "####"
+      , "#  #"
+      , "#  #"
+      , "#  #"
+      , "####"
+      ]
+    , [ "  # "
+      , " ## "
+      , "  # "
+      , "  # "
+      , " ###"
+      ]
+    , [ "####"
+      , "   #"
+      , "####"
+      , "#   "
+      , "####"
+      ]
+    , [ "####"
+      , "   #"
+      , "####"
+      , "   #"
+      , "####"
+      ]
+    , [ "#  #"
+      , "#  #"
+      , "####"
+      , "   #"
+      , "   #"
+      ]
+    , [ "####"
+      , "#   "
+      , "####"
+      , "   #"
+      , "####"
+      ]
+    , [ "####"
+      , "#   "
+      , "####"
+      , "#  #"
+      , "####"
+      ]
+    , [ "####"
+      , "   #"
+      , "  # "
+      , " #  "
+      , " #  "
+      ]
+    , [ "####"
+      , "#  #"
+      , "####"
+      , "#  #"
+      , "####"
+      ]
+    , [ "####"
+      , "#  #"
+      , "####"
+      , "   #"
+      , "####"
+      ]
+    , [ " ## "
+      , "#  #"
+      , "####"
+      , "#  #"
+      , "#  #"
+      ]
+    , [ "### "
+      , "#  #"
+      , "### "
+      , "#  #"
+      , "### "
+      ]
+    , [ "####"
+      , "#   "
+      , "#   "
+      , "#   "
+      , "####"
+      ]
+    , [ "### "
+      , "#  #"
+      , "#  #"
+      , "#  #"
+      , "### "
+      ]
+    , [ "####"
+      , "#   "
+      , "####"
+      , "#   "
+      , "####"
+      ]
+    , [ "####"
+      , "#   "
+      , "### "
+      , "#   "
+      , "#   "
+      ]
     ]

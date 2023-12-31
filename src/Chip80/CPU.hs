@@ -407,8 +407,13 @@ cpu_ Platform{..} = mdo
             ret
 
         loadHex <- labelled do
-            call indexVXtoIX
-            -- TODO
+            call loadVXtoA
+            replicateM_ 3 do
+                rlca
+            Z80.and 0b0111_1000
+            ld DE baseAddr
+            ld E A
+            ld [ptr] DE
             ret
 
         storeBCD <- labelled do
