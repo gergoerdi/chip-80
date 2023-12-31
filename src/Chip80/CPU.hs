@@ -443,7 +443,7 @@ cpu_ Platform{..} = mdo
             call indexVXtoIX
             loopForever do
                 call scanKeys
-                ld [IX] A
+                ld [IX] B
                 ret Z
 
         storeRegs <- labelled do

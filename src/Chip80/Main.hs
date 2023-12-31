@@ -160,7 +160,7 @@ game image = mdo
         pop IY
         ret
 
-    -- If a key is pressed, write its code into B and set Z
+    -- If a key is pressed, write its code into `B` and set `Z`
     scanKeys <- labelled do
         let keymap = keymapHL2
             keymapSorted = groupBy ((==) `on` fst) . sortBy (compare `on` fst) $ [(addr, (bit, value)) | (value, (addr, bit)) <- zip [0..] keymap]
@@ -237,10 +237,10 @@ keymapHL2 =
     , (0x3aef, 4) -- D
 
     , (0x3a7f, 2) -- Z
-    , (0x3a3f, 3) -- C
+    , (0x3aef, 3) -- C
     , (0x3afb, 4) -- 4
     , (0x3abf, 2) -- R
-    , (0x3a3f, 6) -- F
+    , (0x3aef, 6) -- F
     , (0x3abf, 6) -- V
     ]
 
