@@ -14,6 +14,8 @@ import Control.Monad
 import Data.Bits
 import Data.Char
 import qualified Data.ByteString as BS
+import Data.List (sortBy, groupBy)
+import Data.Function (on)
 
 pictureWidth :: Word8
 pictureWidth = 64
@@ -41,7 +43,7 @@ game image = mdo
     loopForever $ pure ()
 
     vidBuf <- labelled $ db $ replicate (8 * 32) 0
-    cpu <- labelled $ cpu_ Platform{ baseAddr = 0x7000, vidAddr = vidBuf, spritePre, spritePost, clearScreen }
+    cpu <- labelled $ cpu_ Platform{ baseAddr, vidAddr = vidBuf, spritePre, spritePost, clearScreen, scanKeys }
     prog <- labelled $ db image
 
     clearScreen <- labelled do
@@ -152,6 +154,17 @@ game image = mdo
         pop IY
         ret
 
+    -- If a key is pressed, write its code into B and set Z
+    scanKeys <- labelled do
+        let keymap = keymapHL2
+            keymapSorted = groupBy ((==) `on` fst) . sortBy (compare `on` fst) $ [(addr, (bit, value)) | (value, (addr, bit)) <- zip [0..] keymap]
+        forM_ keymapSorted \(keys@((addr, _):_)) -> do
+            ld A [addr]
+            forM_ keys \(_, (i, value)) -> do
+                Z80.bit i A
+                ld B value
+                ret Z
+        ret
 
     charmap <- labelled $ db charmapHL2
 
@@ -195,4 +208,28 @@ charmapHL2 =
     , 0xf6 -- 11_01
     , 0xf5 -- 11_10
     , 0xe0 -- 11_11
+    ]
+
+keymapHL2 :: [(Location, Word8)]
+keymapHL2 =
+    [ (0x3a7f, 0) -- X
+
+    , (0x3afb, 1) -- 1
+    , (0x3afb, 2) -- 2
+    , (0x3afb, 3) -- 3
+
+    , (0x3abf, 1) -- Q
+    , (0x3abf, 7) -- W
+    , (0x3aef, 5) -- E
+
+    , (0x3aef, 1) -- A
+    , (0x3abf, 3) -- S
+    , (0x3aef, 4) -- D
+
+    , (0x3a7f, 2) -- Z
+    , (0x3a3f, 3) -- C
+    , (0x3afb, 4) -- 4
+    , (0x3abf, 2) -- R
+    , (0x3a3f, 6) -- F
+    , (0x3abf, 6) -- V
     ]

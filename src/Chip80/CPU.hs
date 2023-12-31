@@ -28,6 +28,7 @@ data Platform = Platform
     , spritePre :: Location
     , spritePost :: Location
     , clearScreen :: Location
+    , scanKeys :: Location
     }
 
 -- | `baseAddr` should be 12-bit-aligned
@@ -435,7 +436,10 @@ cpu_ Platform{..} = mdo
 
         waitKey <- labelled do
             call indexVXtoIX
-            ret
+            loopForever do
+                call scanKeys
+                ld [IX] A
+                ret Z
 
         storeRegs <- labelled do
             ld A B
