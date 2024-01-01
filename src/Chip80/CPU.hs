@@ -5,6 +5,8 @@ module Chip80.CPU where
 
 import Z80
 import Z80.Utils
+import LFSR
+
 import Data.Word
 import Data.Int
 import Control.Monad
@@ -316,7 +318,18 @@ cpu_ Platform{..} = mdo
         pop IX
         ret
 
-    opC <- labelled do -- TODO: Randomize vx imm
+    lfsr <- labelled lfsr10
+    rnd <- labelled $ dw [1]
+
+    opC <- labelled do -- Randomize vx imm
+        call indexVXtoIX
+        ld DE [rnd]
+        call lfsr
+        ld [rnd] DE
+
+        ld A E
+        Z80.and C
+        ld [IX] A
         ret
 
     opD <- labelled do -- DrawSprite vx vy n
