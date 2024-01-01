@@ -183,8 +183,8 @@ cpu_ Platform{..} = mdo
 
     op8 <- labelled mdo -- ALU
         ld A C
-        Z80.and 0x0f
-        sla A
+        rla
+        Z80.and 0b0001_1110
         ld H 0
         ld L A
         call loadVXtoA
@@ -193,6 +193,11 @@ cpu_ Platform{..} = mdo
         pop IX
         ld DE funs
         add HL DE
+
+        ld E [HL]
+        inc HL
+        ld D [HL]
+        ex DE HL
         code [0xe9] -- jp [HL]
 
         mov_ <- labelled do
