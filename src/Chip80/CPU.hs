@@ -28,7 +28,7 @@ data Platform = Platform
     , spritePre :: Location
     , spritePost :: Location
     , clearScreen :: Location
-    , scanKeys :: Location
+    , waitKeyPress :: Location
     , checkKey :: Location
     }
 
@@ -458,10 +458,9 @@ cpu_ Platform{..} = mdo
 
         waitKey <- labelled do
             call indexVXtoIX
-            loopForever do
-                call scanKeys
-                ld [IX] B
-                ret Z
+            call waitKeyPress
+            ld [IX] B
+            ret
 
         storeRegs <- labelled do -- StoreRegs VX
             ld A B

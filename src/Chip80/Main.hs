@@ -26,7 +26,8 @@ pictureHeight = 32
 game :: BS.ByteString -> Z80ASM
 game image = mdo
     let baseAddr = 0x7000
-        vidBuf = baseAddr + 0x0100
+        kbdBuf = baseAddr + 0x080
+        vidBuf = baseAddr + 0x100
     ld SP $ baseAddr - 1
 
     ld DE baseAddr
@@ -167,17 +168,48 @@ game image = mdo
         pop IY
         ret
 
-    -- If a key is pressed, write its code into `B` and set `Z`
+    -- Scan the keyboard and write its state to the 16 bytes starting at `kbdBuf`
     scanKeys <- labelled do
         let keymap = keymapHL2
             keymapSorted = groupBy ((==) `on` fst) . sortBy (compare `on` fst) $ [(addr, (bit, value)) | (value, (addr, bit)) <- zip [0..] keymap]
         forM_ keymapSorted \(keys@((addr, _):_)) -> do
             ld A [addr]
             forM_ keys \(_, (i, value)) -> do
+                ld HL $ kbdBuf + value
+                ld [HL] 0x00
                 Z80.bit i A
-                ld B value
-                ret Z
+                unlessFlag NZ $ dec [HL]
         ret
+
+    -- Wait for keypress, write its code into `B`
+    waitKeyPress <- labelled mdo
+        loopForever do
+            -- Store old keyboard state
+            ld DE oldState
+            ld HL kbdBuf
+            ld BC 16
+            ldir
+
+            call scanKeys
+            ld HL kbdBuf
+            ld DE oldState
+            ld B 0
+            withLabel \loop -> do
+                -- Check for a key that wasn't pressed before, but is pressed now
+                ld A [DE]
+                inc DE
+                cpl
+                ld C [HL]
+                inc HL
+                Z80.and C
+                ret NZ
+
+                inc B
+                ld A B
+                cp 16
+                jp NZ loop
+        oldState <- labelled $ db $ replicate 16 0
+        pure ()
 
     -- If key in `A` is pressed, set `Z`
     checkKey <- labelled do
