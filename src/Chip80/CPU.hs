@@ -87,10 +87,10 @@ cpu_ Platform{..} = mdo
 
         -- Ret
         ld HL [sp]
+        dec HL
         ld D [HL]
         dec HL
         ld E [HL]
-        dec HL
         ld [sp] HL
         push DE
         pop IY
