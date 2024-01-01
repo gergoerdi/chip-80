@@ -26,6 +26,7 @@ pictureHeight = 32
 game :: BS.ByteString -> Z80ASM
 game image = mdo
     let baseAddr = 0x7000
+        vidBuf = baseAddr + 0x0100
     ld SP $ baseAddr - 1
 
     ld DE baseAddr
@@ -55,7 +56,6 @@ game image = mdo
 
     loopForever $ pure ()
 
-    vidBuf <- labelled $ db $ replicate (8 * 32) 0
     cpu <- labelled $ cpu_ Platform{ vidAddr = vidBuf, .. }
     prog <- labelled $ db image
 
