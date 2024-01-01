@@ -213,8 +213,13 @@ game image = mdo
 
     -- If key in `A` is pressed, set `Z`
     checkKey <- labelled do
-        ld A 0
-        cp 1
+        call scanKeys
+        ld B 0
+        ld C A
+        ld HL kbdBuf
+        add HL BC
+        ld A [HL]
+        cp 0xff
         ret
 
     charmap <- labelled $ db charmapHL2
