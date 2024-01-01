@@ -28,6 +28,15 @@ game image = mdo
     let baseAddr = 0x7000
     ld SP $ baseAddr - 1
 
+    ld DE baseAddr
+    ld A 0
+    decLoopB 16 do
+        push BC
+        decLoopB 256 do
+            ld [DE] A
+            inc DE
+        pop BC
+
     -- Load hex font
     ld DE baseAddr
     ld HL hex
@@ -37,14 +46,12 @@ game image = mdo
     -- Load program into CHIP-8 RAM
     ld HL prog
     ld DE $ baseAddr + 0x200
-    ld BC (0x1000 - 0x200)
+    ld BC $ fromIntegral $ BS.length image -- (0x1000 - 0x200)
     ldir
 
     ld IY $ baseAddr + 0x200
     loopForever do
-        push BC
         call cpu
-        pop BC
 
     loopForever $ pure ()
 
