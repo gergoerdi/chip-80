@@ -152,23 +152,23 @@ cpu_ Platform{..} = mdo
         call loadVXtoA
 
         cp C
-        ret NZ
-        jp skip
+        jp Z skip
+        ret
 
     op4 <- labelled do -- SkipNEqImm vx imm
         call loadVXtoA
 
         cp C
-        ret Z
-        jp skip
+        jp NZ skip
+        ret
 
     op5 <- labelled do  -- SkipEqReg vx vy
         call loadVXtoA
         call loadVYtoC
 
         cp C
-        ret NZ
-        jp skip
+        jp Z skip
+        ret
 
     op6 <- labelled do -- LoadImm vx imm
         call indexVXtoIX
@@ -281,8 +281,8 @@ cpu_ Platform{..} = mdo
         call loadVYtoC
 
         cp C
-        ret Z
-        jp skip
+        jp NZ skip
+        ret
 
     opA <- labelled do -- LoadPtr
         -- space
@@ -451,19 +451,19 @@ cpu_ Platform{..} = mdo
                 ld [IX] B
                 ret Z
 
-        storeRegs <- labelled do
+        storeRegs <- labelled do -- StoreRegs VX
             ld A B
             Z80.and 0x0f
             ld C A
             ld B 0
             inc BC
-            ld HL regs
             ld DE [ptr]
+            ld HL regs
             ldir
             ld [ptr] DE
             ret
 
-        loadRegs <- labelled do
+        loadRegs <- labelled do -- LoadRegs VX
             ld A B
             Z80.and 0x0f
             ld C A
