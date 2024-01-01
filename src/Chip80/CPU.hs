@@ -470,6 +470,10 @@ cpu_ Platform{..} = mdo
             ld B 0
             inc BC
             ld DE [ptr]
+            ld A D
+            Z80.and 0x0f
+            Z80.or addressMask
+            ld D A
             ld HL regs
             ldir
             ld [ptr] DE
@@ -483,8 +487,12 @@ cpu_ Platform{..} = mdo
             inc BC
             ld DE regs
             ld HL [ptr]
+            ld A H
+            Z80.and 0x0f
+            Z80.or addressMask
+            ld H A
             ldir
-            ld [ptr] DE
+            ld [ptr] HL
             ret
         pure ()
 
