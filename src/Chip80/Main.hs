@@ -56,7 +56,7 @@ game image = mdo
     loopForever $ pure ()
 
     vidBuf <- labelled $ db $ replicate (8 * 32) 0
-    cpu <- labelled $ cpu_ Platform{ baseAddr, vidAddr = vidBuf, spritePre, spritePost, clearScreen, scanKeys }
+    cpu <- labelled $ cpu_ Platform{ vidAddr = vidBuf, .. }
     prog <- labelled $ db image
 
     clearScreen <- labelled do
@@ -177,6 +177,12 @@ game image = mdo
                 Z80.bit i A
                 ld B value
                 ret Z
+        ret
+
+    -- If key in `A` is pressed, set `Z`
+    checkKey <- labelled do
+        ld A 0
+        cp 1
         ret
 
     charmap <- labelled $ db charmapHL2

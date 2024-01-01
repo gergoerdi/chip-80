@@ -29,6 +29,7 @@ data Platform = Platform
     , spritePost :: Location
     , clearScreen :: Location
     , scanKeys :: Location
+    , checkKey :: Location
     }
 
 -- | `baseAddr` should be 12-bit-aligned
@@ -380,10 +381,21 @@ cpu_ Platform{..} = mdo
         -- cr
         jp spritePost
 
-    opE <- labelled do -- TODO: SkipKey vx
-        -- ld A C
-        -- cp 0x9e -- Skip if key is pressed
-        -- jp skip
+    opE <- labelled mdo -- SkipKey vx
+        call loadVXtoA
+        call checkKey
+        jp Z pressed
+
+        notPressed <- label
+        ld A C
+        cp 0x9e -- Skip if key is pressed
+        jp NZ skip
+        ret
+
+        pressed <- label
+        ld A C
+        cp 0x9e -- Skip if key is pressed
+        jp Z skip
         ret
 
     opF <- labelled mdo
