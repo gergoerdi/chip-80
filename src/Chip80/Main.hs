@@ -87,6 +87,8 @@ game image = mdo
         pop AF
         ret
 
+    isLastColumn <- labelled $ db [0]
+
     spritePost <- label
     ld A 0x00
     spriteX <- subtract 1 <$> label
@@ -94,7 +96,7 @@ game image = mdo
     spriteY <- subtract 1 <$> label
     ld B 0x00
     spriteH <- subtract 1 <$> label
-    do
+    mdo
         -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
 
         -- Calculate starting source byte into IX
@@ -102,6 +104,12 @@ game image = mdo
         push AF
         replicateM_ 3 rrca
         Z80.and 0x07
+
+        ld HL isLastColumn
+        ld [HL] 0
+        cp 7
+        unlessFlag NZ $ ld [HL] 0xff
+
         replicateM_ 3 $ sla C
         Z80.or C
         -- Normalize to even rows
@@ -137,35 +145,7 @@ game image = mdo
         withLabel \loopRow -> do
             ld D 0
 
-            push BC
-            decLoopB 2 do
-                push BC
-                decLoopB 4 do
-                    -- Calculate into E the next 2x2 bit pattern
-                    ld E 0
-
-                    ld A [IX + 0]
-                    rlca
-                    rl E
-                    rlca
-                    rl E
-                    ld [IX + 0] A
-
-                    ld A [IX + fromIntegral (pictureWidth `div` 8)]
-                    rlca
-                    rl E
-                    rlca
-                    rl E
-                    ld [IX + fromIntegral (pictureWidth `div` 8)] A
-
-                    -- Convert bit pattern into character
-                    ld IY charmap
-                    add IY DE
-                    ldVia A [HL] [IY]
-                    inc HL
-                pop BC
-                inc IX
-            pop BC
+            call renderColumns
 
             ld DE $ fromIntegral pictureWidth `div` 8 + (fromIntegral pictureWidth `div` 8 - 2)
             add IX DE
@@ -176,6 +156,48 @@ game image = mdo
 
         pop IY
         ret
+
+        renderColumns <- labelled do
+            call renderColumn
+            ld A [isLastColumn]
+            Z80.and A
+            jp Z renderColumn
+
+            ld DE 4
+            add HL DE
+            inc IX
+            ret
+
+        renderColumn <- labelled do
+            push BC
+            decLoopB 4 do
+                -- Calculate into E the next 2x2 bit pattern
+                ld E 0
+
+                ld A [IX + 0]
+                rlca
+                rl E
+                rlca
+                rl E
+                ld [IX + 0] A
+
+                ld A [IX + fromIntegral (pictureWidth `div` 8)]
+                rlca
+                rl E
+                rlca
+                rl E
+                ld [IX + fromIntegral (pictureWidth `div` 8)] A
+
+                -- Convert bit pattern into character
+                ld IY charmap
+                add IY DE
+                ldVia A [HL] [IY]
+                inc HL
+            pop BC
+            inc IX
+            ret
+        pure ()
+
 
     -- Scan the keyboard and write its state to the 16 bytes starting at `kbdBuf`
     scanKeys <- labelled do
