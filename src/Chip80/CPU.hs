@@ -32,7 +32,16 @@ data Platform = Platform
     , clearScreen :: Location
     , waitKeyPress :: Location
     , checkKey :: Location
+    , timer :: Location
     }
+
+newFrame_ :: Platform -> Z80ASM
+newFrame_ Platform{..} = do
+    ld A [timer]
+    dec A
+    ret C
+    ld [timer] A
+    ret
 
 -- | `baseAddr` should be 12-bit-aligned
 -- | `IY`: PC
@@ -70,7 +79,6 @@ cpu_ Platform{..} = mdo
     ptr <- labelled $ dw [0]
     regs <- labelled $ db $ replicate 16 0
     let flag = regs + 0xf
-    timer <- labelled $ db [0]
     stack <- labelled $ dw $ replicate 24 0
     sp <- labelled $ dw [stack]
 

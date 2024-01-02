@@ -54,10 +54,19 @@ game image = mdo
     ld IY $ baseAddr + 0x200
     loopForever do
         call cpu
+        ld HL lastFrame
+        ld A [0x403f]
+        cp [HL]
+        unlessFlag Z do
+            ld [lastFrame] A
+            call newFrame
 
-    loopForever $ pure ()
+    timer <- labelled $ db [0]
+    lastFrame <- labelled $ db [0]
 
-    cpu <- labelled $ cpu_ Platform{ vidAddr = vidBuf, .. }
+    let platform = Platform{ vidAddr = vidBuf, .. }
+    cpu <- labelled $ cpu_ platform
+    newFrame <- labelled $ newFrame_ platform
     prog <- labelled $ db image
 
     clearScreen <- labelled do
