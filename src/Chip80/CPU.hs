@@ -211,6 +211,13 @@ cpu_ Platform{..} = mdo
         ex DE HL
         code [0xe9] -- jp [HL]
 
+        let setFlagFromC = do
+                ld HL flag
+                ld [HL] 1
+                ret C
+                ld [HL] 0
+                ret
+
         mov_ <- labelled do
             ld [IX] C
             ret
@@ -229,43 +236,25 @@ cpu_ Platform{..} = mdo
         add_ <- labelled do
             add A C
             ld [IX] A
-            ldVia A [flag] 1
-            ret C
-            ldVia A [flag] 0
-            ret
+            setFlagFromC
         sub_ <- labelled do
             sub C
             ld [IX] A
-            ld A 1
-            ldVia A [flag] 1
-            ret C
-            ldVia A [flag] 0
-            ret
+            setFlagFromC
         subNeg_ <- labelled do
             sub C
             neg
             ccf
             ld [IX] A
-            ldVia A [flag] 1
-            ret C
-            ldVia A [flag] 0
-            ret
+            setFlagFromC
         shiftRight_ <- labelled do
-            ld A C
-            rrca
-            ld [IX] A
-            ldVia A [flag] 1
-            ret C
-            ldVia A [flag] 0
-            ret
+            srl C
+            ld [IX] C
+            setFlagFromC
         shiftLeft_ <- labelled do
-            ld A C
-            rlca
-            ld [IX] A
-            ldVia A [flag] 1
-            ret C
-            ldVia A [flag] 0
-            ret
+            sla C
+            ld [IX] C
+            setFlagFromC
 
         funs <- labelled $ dw
           [ mov_
