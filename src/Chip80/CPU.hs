@@ -217,6 +217,12 @@ cpu_ Platform{..} = mdo
                 ret C
                 ld [HL] 0
                 ret
+            setFlagFromNC = do
+                ld HL flag
+                ld [HL] 1
+                ret NC
+                ld [HL] 0
+                ret
 
         mov_ <- labelled do
             ld [IX] C
@@ -240,13 +246,13 @@ cpu_ Platform{..} = mdo
         sub_ <- labelled do
             sub C
             ld [IX] A
-            setFlagFromC
+            setFlagFromNC
         subNeg_ <- labelled do
-            sub C
-            neg
-            ccf
+            ld D A
+            ld A C
+            sub D
             ld [IX] A
-            setFlagFromC
+            setFlagFromNC
         shiftRight_ <- labelled do
             srl C
             ld [IX] C
