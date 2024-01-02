@@ -430,10 +430,10 @@ cpu_ Platform{..} = mdo
         jp Z loadRegs
         ret
 
-        loadSound <- labelled do
+        loadSound <- labelled do -- TODO: LoadSound VX
             ret
 
-        loadHex <- labelled do
+        loadHex <- labelled do -- LoadHex VX
             call loadVXtoA
             replicateM_ 3 do
                 rlca
@@ -443,21 +443,21 @@ cpu_ Platform{..} = mdo
             ld [ptr] DE
             ret
 
-        storeBCD <- labelled do
+        storeBCD <- labelled mdo -- StoreBCD VX
             -- TODO
             ret
 
-        getTimer <- labelled do
+        getTimer <- labelled do -- GetTimer VX
             call indexVXtoIX
             ldVia A [IX] [timer]
             ret
 
-        loadTimer <- labelled do
+        loadTimer <- labelled do -- LoadTimer VX
             call loadVXtoA
             ld [timer] A
             ret
 
-        addPtr <- labelled do
+        addPtr <- labelled do -- AddPtr VX
             call loadVXtoA
             ld HL [ptr]
             add A L
@@ -466,7 +466,7 @@ cpu_ Platform{..} = mdo
             ld [ptr] HL
             ret
 
-        waitKey <- labelled do
+        waitKey <- labelled do -- WaitKey VX
             call indexVXtoIX
             call waitKeyPress
             ld [IX] B
