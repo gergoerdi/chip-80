@@ -444,8 +444,47 @@ cpu_ Platform{..} = mdo
             ret
 
         storeBCD <- labelled mdo -- StoreBCD VX
-            -- TODO
+            call loadVXtoA
+            ld HL [ptr]
+
+            -- Hundreds
+            cp 200
+            jp NC hundred2
+            cp 100
+            jp NC hundred1
+            ld [HL] 0
+
+            bcd <- labelled do
+                inc HL
+
+                -- From https://www.msx.org/forum/development/msx-development/bcdhex-conversion-asm
+                ld C A
+                Z80.xor A
+                decLoopB 8 do
+                    sla C
+                    adc A A
+                    daa
+            tens <- labelled do
+                ld C A
+                replicateM_ 4 rrca
+                Z80.and 0x0f
+                ld [HL] A
+            ones <- labelled do
+                inc HL
+                ld A C
+                Z80.and 0x0f
+                ld [HL] A
             ret
+
+            hundred2 <- labelled do
+                sub 200
+                ld [HL] 2
+                jp bcd
+            hundred1 <- labelled do
+                sub 100
+                ld [HL] 1
+                jp bcd
+            pure ()
 
         getTimer <- labelled do -- GetTimer VX
             call indexVXtoIX
