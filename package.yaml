@@ -12,6 +12,7 @@ dependencies:
   - bytestring
   - filepath
   - directory
+  - data-default
 
 source-dirs:
   - src

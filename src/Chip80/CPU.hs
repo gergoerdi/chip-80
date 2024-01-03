@@ -12,6 +12,21 @@ import Data.Int
 import Control.Monad
 import Data.Bits
 import Data.Char
+import Data.Default
+
+data Quirks = Quirks
+    { shiftVY, resetVF, incrementPtr, videoWait, clipSprites :: Bool
+    }
+    deriving (Show)
+
+instance Default Quirks where
+    def = Quirks
+        { shiftVY = True
+        , resetVF = True
+        , incrementPtr = True
+        , videoWait = True
+        , clipSprites = True
+        }
 
 dbgA :: Z80ASM
 dbgA = do
@@ -45,8 +60,8 @@ newFrame_ Platform{..} = do
 
 -- | `baseAddr` should be 12-bit-aligned
 -- | `IY`: PC
-cpu_ :: Platform -> Z80ASM
-cpu_ Platform{..} = mdo
+cpu_ :: Quirks -> Platform -> Z80ASM
+cpu_ Quirks{..} Platform{..} = mdo
 
     -- Fetch next instruction
     ld B [IY]
@@ -395,7 +410,9 @@ cpu_ Platform{..} = mdo
             pop AF
             djnz loop
         -- cr
-        jp spritePost
+        call spritePost
+        when videoWait halt
+        ret
 
     opE <- labelled mdo -- SkipKey vx
         call loadVXtoA

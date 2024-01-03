@@ -16,6 +16,7 @@ import Data.Char
 import qualified Data.ByteString as BS
 import Data.List (sortBy, groupBy)
 import Data.Function (on)
+import Data.Default
 
 pictureWidth :: Word8
 pictureWidth = 64
@@ -65,7 +66,7 @@ game image = mdo
     lastFrame <- labelled $ db [0]
 
     let platform = Platform{ vidAddr = vidBuf, .. }
-    cpu <- labelled $ cpu_ platform
+    cpu <- labelled $ cpu_ def platform
     newFrame <- labelled $ newFrame_ platform
     prog <- labelled $ db image
 
