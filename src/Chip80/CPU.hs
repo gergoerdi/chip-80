@@ -45,8 +45,8 @@ data Platform = Platform
     , spritePre :: Location
     , spritePost :: Location
     , clearScreen :: Location
-    , waitKeyPress :: Location
-    , checkKey :: Location
+    , scanKeys :: Location
+    , keyBuf :: Location
     , timer :: Location
     }
 
@@ -416,8 +416,16 @@ cpu_ Quirks{..} Platform{..} = mdo
 
     opE <- labelled mdo -- SkipKey vx
         call loadVXtoA
-        call checkKey
-        jp Z pressed
+
+        ld D 0
+        ld E A
+        ld IX keyBuf
+        add IX DE
+
+        call scanKeys
+        ld A [IX]
+        Z80.and A
+        jp NZ pressed
 
         notPressed <- label
         ld A C
@@ -528,11 +536,62 @@ cpu_ Quirks{..} Platform{..} = mdo
             ld [ptr] HL
             ret
 
-        waitKey <- labelled do -- WaitKey VX
+        waitKey <- labelled mdo -- WaitKey VX
             call indexVXtoIX
-            call waitKeyPress
+
+            -- Initialize `prevKeyBuf`
+            ld DE prevKeyBuf
+            ld A 0xff
+            decLoopB 16 do
+                ld [DE] A
+                inc DE
+
+            -- Wait for a fresh keypress
+            skippable \pressed -> loopForever do
+                call scanKeys
+
+                ld HL keyBuf
+                ld DE prevKeyBuf
+                ld B 0 -- This will be the key found
+                withLabel \loop -> do
+                    -- Check for a key that wasn't pressed before, but is pressed now.
+                    ld A [DE]
+                    inc DE
+                    cpl
+                    ld C [HL]
+                    inc HL
+                    Z80.and C
+                    jp NZ pressed
+
+                    inc B
+                    ld A B
+                    cp 16
+                    jp NZ loop
+
+                -- Store old keyboard state
+                ld DE prevKeyBuf
+                ld HL keyBuf
+                ld BC 16
+                ldir
+
+            -- Write result
             ld [IX] B
+
+            -- Wait for the found key to be released
+            ld C B
+            ld B 0
+            ld IX keyBuf
+            add IX BC
+
+            withLabel \waitForRelease -> do
+                call scanKeys
+                ld A [IX]
+                Z80.and A
+                jp NZ waitForRelease
             ret
+
+            prevKeyBuf <- labelled $ db $ replicate 16 0
+            pure ()
 
         storeRegs <- labelled do -- StoreRegs VX
             ld A B
