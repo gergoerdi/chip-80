@@ -430,6 +430,8 @@ cpu_ Quirks{..} Platform{..} = mdo
         ret
 
     opD <- labelled do -- DrawSprite vx vy n
+        ldVia A [flag] 0 -- We'll overwrite this with 1 if we find a collision
+
         ld A C
         Z80.and 0x0f
         ld H A
@@ -474,11 +476,17 @@ cpu_ Quirks{..} Platform{..} = mdo
 
             ld C [HL]
             ld A D
+            Z80.and C
+            unlessFlag Z $ ldVia A [flag] 1
+            ld A D
             Z80.xor C
             ld [HL] A
 
             inc HL
             ld C [HL]
+            ld A E
+            Z80.and C
+            unlessFlag Z $ ldVia A [flag] 1
             ld A E
             Z80.xor C
             ld [HL] A
