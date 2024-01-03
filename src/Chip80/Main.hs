@@ -27,9 +27,9 @@ pictureHeight = 32
 game :: BS.ByteString -> Z80ASM
 game image = mdo
     let baseAddr = 0x7000
-        keyBuf = baseAddr + 0x080
-        vidBuf = baseAddr + 0x100
-    ld SP $ baseAddr - 1
+        vidBuf = baseAddr - 256
+        keyBuf = vidBuf - 16
+    ld SP $ keyBuf - 1
 
     -- Zero out CHIP-8 RAM
     ld DE baseAddr
