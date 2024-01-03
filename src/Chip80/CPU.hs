@@ -245,14 +245,17 @@ cpu_ Quirks{..} Platform{..} = mdo
         or_ <- labelled do
             Z80.or C
             ld [IX] A
+            when resetVF $ ldVia A [flag] 0
             ret
         and_ <- labelled do
             Z80.and C
             ld [IX] A
+            when resetVF $ ldVia A [flag] 0
             ret
         xor_ <- labelled do
             Z80.xor C
             ld [IX] A
+            when resetVF $ ldVia A [flag] 0
             ret
         add_ <- labelled do
             add A C
@@ -269,12 +272,20 @@ cpu_ Quirks{..} Platform{..} = mdo
             ld [IX] A
             setFlagFromNC
         shiftRight_ <- labelled do
-            srl C
-            ld [IX] C
+            if shiftVY then do
+                srl C
+                ld [IX] C
+              else do
+                srl A
+                ld [IX] A
             setFlagFromC
         shiftLeft_ <- labelled do
-            sla C
-            ld [IX] C
+            if shiftVY then do
+                sla C
+                ld [IX] C
+              else do
+                sla A
+                ld [IX] A
             setFlagFromC
 
         funs <- labelled $ dw
