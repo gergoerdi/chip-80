@@ -617,7 +617,7 @@ cpu_ Quirks{..} Platform{..} = mdo
             ld D A
             ld HL regs
             ldir
-            ld [ptr] DE
+            when incrementPtr $ ld [ptr] DE
             ret
 
         loadRegs <- labelled do -- LoadRegs VX
@@ -633,7 +633,7 @@ cpu_ Quirks{..} Platform{..} = mdo
             Z80.or addressMask
             ld H A
             ldir
-            ld [ptr] HL
+            when incrementPtr $ ld [ptr] DE
             ret
         pure ()
 
