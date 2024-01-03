@@ -129,7 +129,7 @@ cpu_ Quirks{..} Platform{..} = mdo
         ret
 
     step <- label
-    -- Fetch next instruction
+    -- Fetch next instruction into B and C
     ld B [IY]
     inc IY
 
@@ -399,18 +399,20 @@ cpu_ Quirks{..} Platform{..} = mdo
         ret
 
     opB <- labelled do -- JumpPlusV0
-        ld A B
-        Z80.and 0x0f
-        Z80.or addressMask
-        ld H A
+        ld H B
 
         ld A [regs]
         add A C
         unlessFlag NC $ inc H
         ld L A
 
+        ld A H
+        Z80.and 0x0f
+        Z80.or addressMask
+        ld H A
+
         push HL
-        pop IX
+        pop IY
         ret
 
     lfsr <- labelled lfsr10
