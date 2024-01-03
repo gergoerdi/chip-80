@@ -62,7 +62,73 @@ newFrame_ Platform{..} = do
 -- | `IY`: PC
 cpu_ :: Quirks -> Platform -> Z80ASM
 cpu_ Quirks{..} Platform{..} = mdo
+    ld A [state]
+    cp 1
+    jp Z waitPress
+    cp 2
+    jp Z waitRelease
+    jp step
 
+    state <- labelled $ db [0]
+    prevKeyBuf <- labelled $ db $ replicate 16 0
+    keyAddr <- labelled $ dw [0]
+
+    waitPress <- labelled do
+        -- Wait for a fresh keypress
+        call scanKeys
+
+        ld HL keyBuf
+        ld DE prevKeyBuf
+        ld B 0 -- This will be the key found
+        skippable \pressed -> do
+            withLabel \loop -> do
+                -- Check for a key that wasn't pressed before, but is pressed now.
+                ld A [DE]
+                inc DE
+                cpl
+                ld C [HL]
+                inc HL
+                Z80.and C
+                jp NZ pressed
+
+                inc B
+                ld A B
+                cp 16
+                jp NZ loop
+
+            -- Store old keyboard state
+            ld DE prevKeyBuf
+            ld HL keyBuf
+            ld BC 16
+            ldir
+
+            ret
+
+        -- Write result
+        ld IX [keyAddr]
+        ld [IX] B
+
+        -- Wait for the found key to be released
+        ld C B
+        ld B 0
+        ld IX keyBuf
+        add IX BC
+        ld [keyAddr] IX
+
+        ldVia A [state] 2
+        ret
+
+    waitRelease <- labelled do
+        call scanKeys
+        ld IX [keyAddr]
+        ld A [IX]
+        Z80.and A
+        ret NZ
+
+        ldVia A [state] 0
+        ret
+
+    step <- label
     -- Fetch next instruction
     ld B [IY]
     inc IY
@@ -547,8 +613,9 @@ cpu_ Quirks{..} Platform{..} = mdo
             ld [ptr] HL
             ret
 
-        waitKey <- labelled mdo -- WaitKey VX
+        waitKey <- labelled do -- WaitKey VX
             call indexVXtoIX
+            ld [keyAddr] IX
 
             -- Initialize `prevKeyBuf`
             ld DE prevKeyBuf
@@ -557,52 +624,9 @@ cpu_ Quirks{..} Platform{..} = mdo
                 ld [DE] A
                 inc DE
 
-            -- Wait for a fresh keypress
-            skippable \pressed -> loopForever do
-                call scanKeys
-
-                ld HL keyBuf
-                ld DE prevKeyBuf
-                ld B 0 -- This will be the key found
-                withLabel \loop -> do
-                    -- Check for a key that wasn't pressed before, but is pressed now.
-                    ld A [DE]
-                    inc DE
-                    cpl
-                    ld C [HL]
-                    inc HL
-                    Z80.and C
-                    jp NZ pressed
-
-                    inc B
-                    ld A B
-                    cp 16
-                    jp NZ loop
-
-                -- Store old keyboard state
-                ld DE prevKeyBuf
-                ld HL keyBuf
-                ld BC 16
-                ldir
-
-            -- Write result
-            ld [IX] B
-
-            -- Wait for the found key to be released
-            ld C B
-            ld B 0
-            ld IX keyBuf
-            add IX BC
-
-            withLabel \waitForRelease -> do
-                call scanKeys
-                ld A [IX]
-                Z80.and A
-                jp NZ waitForRelease
+            -- Go to state waitPress
+            ldVia A [state] 1
             ret
-
-            prevKeyBuf <- labelled $ db $ replicate 16 0
-            pure ()
 
         storeRegs <- labelled do -- StoreRegs VX
             ld A B
