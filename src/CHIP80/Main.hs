@@ -74,6 +74,7 @@ run baseAddr = mdo
         cp [HL]
         unlessFlag Z do
             ld [lastFrame] A
+            call scanKeys
             call newFrame
 
     timer <- labelled $ db [0]

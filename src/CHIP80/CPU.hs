@@ -45,7 +45,6 @@ data Platform = Platform
     , spritePre :: Location
     , spritePost :: Location
     , clearScreen :: Location
-    , scanKeys :: Location
     , keyBuf :: Location
     , timer :: Location
     , waitForFrame :: Location
@@ -77,8 +76,6 @@ cpu_ Quirks{..} Platform{..} = mdo
 
     waitPress <- labelled do
         -- Wait for a fresh keypress
-        call scanKeys
-
         ld HL keyBuf
         ld DE prevKeyBuf
         ld B 0 -- This will be the key found
@@ -121,7 +118,6 @@ cpu_ Quirks{..} Platform{..} = mdo
         ret
 
     waitRelease <- labelled do
-        call scanKeys
         ld IX [keyAddr]
         ld A [IX]
         Z80.and A
@@ -566,7 +562,6 @@ cpu_ Quirks{..} Platform{..} = mdo
         ld IX keyBuf
         add IX DE
 
-        call scanKeys
         ld A [IX]
         Z80.and A
         jp NZ pressed
