@@ -86,13 +86,15 @@ run baseAddr = mdo
     newFrame <- labelled $ newFrame_ platform
 
     clearScreen <- labelled do
-        ld HL videoStart
-        withLabel \loop -> do
-            ld [HL] 0x20
-            inc HL
-            ld A H
-            cp 0xc4
-            jp NZ loop
+        ld HL $ videoStart + 4
+        ld DE 8
+        decLoopB 16 do
+            ld C B
+            decLoopB 32 do
+                ld [HL] 0x20
+                inc HL
+            add HL DE
+            ld B C
         ret
 
     spritePre <- labelled do
