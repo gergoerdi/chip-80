@@ -435,7 +435,7 @@ cpu_ Quirks{..} Platform{..} = mdo
         ld [IX] A
         ret
 
-    opD <- labelled do -- DrawSprite vx vy n
+    opD <- labelled mdo -- DrawSprite vx vy n
         ldVia A [flag] 0 -- We'll overwrite this with 1 if we find a collision
 
         -- Evaluate VX clamped to 0..63 into `A`
@@ -460,13 +460,11 @@ cpu_ Quirks{..} Platform{..} = mdo
 
         -- Calculate target offset
         push AF
-        ld D 0
+        ld H 0
         replicateM_ 3 $ sla C
         replicateM_ 3 $ srl A
         add A C
-        ld E A
-        ld HL vidAddr
-        add HL DE
+        ld L A
 
         -- Calculate sub-byte bit offset
         pop AF
@@ -476,7 +474,16 @@ cpu_ Quirks{..} Platform{..} = mdo
 
         -- `IX`: source (sprite data)
         -- `HL`: target (video buffer)
-        withLabel \loop -> do
+        skippable \clipVertical -> withLabel \loopRow -> do
+            when clipSprites do
+                -- Is `HL` now over line 31?
+                ld E A
+                ld A H
+                cp 1
+                jp NC clipVertical
+                ld A E
+            ld H 0
+
             push AF
 
             ld D [IX]
@@ -490,6 +497,12 @@ cpu_ Quirks{..} Platform{..} = mdo
                 rr E
                 dec A
 
+            push HL
+            push DE
+            ld DE vidAddr
+            add HL DE
+            pop DE
+
             ld C [HL]
             ld A D
             Z80.and C
@@ -497,24 +510,53 @@ cpu_ Quirks{..} Platform{..} = mdo
             ld A D
             Z80.xor C
             ld [HL] A
+            pop HL
 
-            inc HL
-            ld C [HL]
-            ld A E
-            Z80.and C
-            unlessFlag Z $ ldVia A [flag] 1
-            ld A E
-            Z80.xor C
-            ld [HL] A
+            skippable \clipHorizontal -> do
+                -- Horizontal wrap-around
+                ldVia A [nextRow] 7
+                ld A L
+                inc L
+                Z80.and 0b00000_111
+                if clipSprites then jp Z clipHorizontal else
+                    unlessFlag NZ do
+                      ld A L
+                      sub 8
+                      ld L A
+                      ldVia A [nextRow] (7 + 8)
 
-            ld DE 7
+                when clipSprites do
+                    -- Is `HL` now wrapped over to the next line?
+                    ld A L
+                    Z80.and 0b111
+                    jp Z clipHorizontal
+
+                push HL
+                push DE
+                ld DE vidAddr
+                add HL DE
+                pop DE
+
+                ld C [HL]
+                ld A E
+                Z80.and C
+                unlessFlag Z $ ldVia A [flag] 1
+                ld A E
+                Z80.xor C
+                ld [HL] A
+                pop HL
+
+            ld D 0
+            ldVia A E [nextRow]
             add HL DE
 
             pop AF
-            djnz loop
+            djnz loopRow
         call spritePost
         when videoWait $ ldVia A [waitForFrame] 1
         ret
+        nextRow <- labelled $ db [0]
+        pure ()
 
     opE <- labelled mdo -- SkipKey vx
         call loadVXtoA
