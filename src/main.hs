@@ -2,7 +2,7 @@
 {-# LANGUAGE RecursiveDo #-}
 module Main where
 
-import qualified Chip80.Main as Chip80
+import qualified CHIP80.Main as Chip80
 
 import Z80
 import Z80.Utils

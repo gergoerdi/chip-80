@@ -1,7 +1,7 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Chip80.CPU where
+module CHIP80.CPU where
 
 import Z80
 import Z80.Utils
