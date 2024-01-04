@@ -438,11 +438,21 @@ cpu_ Quirks{..} Platform{..} = mdo
     opD <- labelled do -- DrawSprite vx vy n
         ldVia A [flag] 0 -- We'll overwrite this with 1 if we find a collision
 
+        -- Evaluate VX clamped to 0..63 into `A`
         ld A C
         Z80.and 0x0f
         ld H A
         call loadVXtoA
+        Z80.and 0x3f
+
+        -- Evaluate VY clamped to 0..31 into `C`
         call loadVYtoC
+        push AF
+        ld A C
+        Z80.and 0x1f
+        ld C A
+        pop AF
+
         ld B H
 
         -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
