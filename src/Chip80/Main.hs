@@ -65,6 +65,7 @@ game image = mdo
 
     timer <- labelled $ db [0]
     lastFrame <- labelled $ db [0]
+    waitForFrame <- labelled $ db [0]
 
     let platform = Platform{ vidAddr = vidBuf, .. }
     cpu <- labelled $ cpu_ def platform

@@ -48,10 +48,12 @@ data Platform = Platform
     , scanKeys :: Location
     , keyBuf :: Location
     , timer :: Location
+    , waitForFrame :: Location
     }
 
 newFrame_ :: Platform -> Z80ASM
 newFrame_ Platform{..} = do
+    ldVia A [waitForFrame] 0
     ld A [timer]
     dec A
     ret C
@@ -129,6 +131,10 @@ cpu_ Quirks{..} Platform{..} = mdo
         ret
 
     step <- label
+    ld A [waitForFrame]
+    Z80.and A
+    ret NZ
+
     -- Fetch next instruction into B and C
     ld B [IY]
     inc IY
@@ -496,9 +502,8 @@ cpu_ Quirks{..} Platform{..} = mdo
 
             pop AF
             djnz loop
-        -- cr
         call spritePost
-        when videoWait halt
+        when videoWait $ ldVia A [waitForFrame] 1
         ret
 
     opE <- labelled mdo -- SkipKey vx
