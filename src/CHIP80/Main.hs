@@ -84,6 +84,8 @@ run baseAddr = mdo
     let platform = Platform{ vidAddr = vidBuf, .. }
     cpu <- labelled $ cpu_ def platform
     newFrame <- labelled $ newFrame_ platform
+    rnd <- labelled $ dw [0xf00f]
+    lfsrDE <- labelled lfsr10
 
     clearScreen <- labelled do
         ld HL $ videoStart + 4

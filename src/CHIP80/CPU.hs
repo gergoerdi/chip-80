@@ -5,7 +5,6 @@ module CHIP80.CPU where
 
 import Z80
 import Z80.Utils
-import LFSR
 
 import Data.Word
 import Data.Int
@@ -48,11 +47,16 @@ data Platform = Platform
     , keyBuf :: Location
     , timer :: Location
     , waitForFrame :: Location
+    , lfsrDE :: Location
+    , rnd :: Location
     }
 
 newFrame_ :: Platform -> Z80ASM
 newFrame_ Platform{..} = do
     ldVia A [waitForFrame] 0
+    ld DE [rnd]
+    call lfsrDE
+    ld [rnd] DE
     ld A [timer]
     dec A
     ret C
@@ -417,13 +421,10 @@ cpu_ Quirks{..} Platform{..} = mdo
         pop IY
         ret
 
-    lfsr <- labelled lfsr10
-    rnd <- labelled $ dw [1]
-
     opC <- labelled do -- Randomize vx imm
         call indexVXtoIX
         ld DE [rnd]
-        call lfsr
+        call lfsrDE
         ld [rnd] DE
 
         ld A E
