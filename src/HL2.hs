@@ -26,4 +26,7 @@ printCenteredLines :: Location -> Location -> [String] -> Z80ASM
 printCenteredLines base row = mapM_ (uncurry $ printCenteredLine base) . zip [row..]
 
 invert :: String -> String
-invert = map (chr . (+ 0x80) . ord)
+invert = map invert1
+
+invert1 :: Char -> Char
+invert1 = chr . (+ 0x80) . ord

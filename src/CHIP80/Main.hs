@@ -8,6 +8,8 @@ import CHIP80.CPU
 import CHIP80.Font
 import CHIP80.HL2.Input
 import CHIP80.HL2.Video
+import LFSR
+import Z80.ZX0
 
 import Z80
 import Z80.Utils
@@ -17,30 +19,122 @@ import Control.Monad
 import Data.Bits
 import Data.Char
 import qualified Data.ByteString as BS
-import Data.List (sortBy, groupBy)
+import Data.List (sortBy, groupBy, intercalate)
 import Data.Function (on)
 import Data.Default
 
-game :: BS.ByteString -> Z80ASM
-game image = mdo
+game :: Location -> Z80ASM
+game compressedProg = mdo
     let baseAddr = 0x7000
     ld SP $ baseAddr - (256 + 16) - 1
 
-    -- Load program into CHIP-8 RAM
-    ld HL prog
-    ld DE $ baseAddr + 0x200
-    ld BC $ fromIntegral $ BS.length image -- (0x1000 - 0x200)
-    ldir
+    call drawUI
 
-    ld IY $ baseAddr + 0x1ff
-    ld [IY] 1
+    -- Uncompress program into CHIP-8 RAM
+    call setup
+
+    ld HL compressedProg
+    ld DE $ baseAddr + 0x200
+    call uncompress
 
     run baseAddr
-    prog <- labelled $ db image
+
+    drawUI <- labelled drawUI_
+    setup <- labelled $ setup_ baseAddr
+    uncompress <- labelled standardFwd
+
     pure ()
 
-setup :: Location -> Z80ASM
-setup baseAddr = mdo
+drawUI_ :: Z80ASM
+drawUI_ = mdo
+    -- Clear screen
+    ld HL videoStart
+    withLabel \loop -> do
+        ld [HL] 0x20
+        inc HL
+        ld A H
+        cp 0xc4
+        jp NZ loop
+
+    ld HL $ videoStart + 4 + (3 - 1) * 40 - 1
+    ld [HL] 0x6e
+    inc HL
+    ld A 0x96
+    decLoopB 32 do
+        ld [HL] A
+        inc HL
+    ld [HL] 0x6d
+
+    ld HL $ videoStart + 4 + (3 + 16) * 40 - 1
+    ld [HL] 0x6c
+    inc HL
+    ld A 0x95
+    decLoopB 32 do
+        ld [HL] A
+        inc HL
+    ld [HL] 0x6b
+
+    ld HL $ videoStart + 4 + 3 * 40 - 1
+    decLoopB 16 do
+        ld [HL] 0xeb
+        ld DE 33
+        add HL DE
+        ld [HL] 0xea
+        ld DE 7
+        add HL DE
+
+    -- Draw main UI
+    ld HL $ videoStart + 40
+    ld DE banner
+    skippable \end -> loopForever do
+        ld A [DE]
+        Z80.and A
+        jp Z end
+        ld [HL] A
+        inc HL
+        inc DE
+    ld HL $ videoStart + (3 + 16 + 1 + 1) * 40
+    forM_ keyss \keys -> do
+        ld DE keys
+        skippable \end -> loopForever do
+            ld A [DE]
+            Z80.and A
+            jp Z end
+            ld [HL] A
+            inc HL
+            inc DE
+        ld DE (40 - 10) -- 4 * 4 + 1)
+        add HL DE
+    ld HL $ videoStart + (3 + 16 + 1 + 1) * 40 + 20
+    ld DE reset
+    skippable \end -> loopForever do
+        ld A [DE]
+        Z80.and A
+        jp Z end
+        ld [HL] A
+        inc HL
+        inc DE
+    ret
+    banner <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $ invert "   CHIP-80     https://gergo.erdi.hu/   "
+    keyss <- mapM (labelled . db . (++ [0]) . map (fromIntegral . ord . toUpper)) $
+      -- let rows = [ [ ('1', '1'), ('2', '2'), ('3', '3'), ('C', '4') ]
+      --            , [ ('4', 'q'), ('5', 'W'), ('6', 'e'), ('D', 'r') ]
+      --            , [ ('7', 'a'), ('8', 's'), ('9', 'd'), ('E', 'f') ]
+      --            , [ ('A', 'z'), ('0', 'x'), ('B', 'c'), ('F', 'v') ]
+      --            ]
+      -- in [ intercalate " " [ [sym, ' ', invert1 key] | (sym, key) <- row ] | row <- rows ]
+      let rows = [ ("123C", "1234")
+                 , ("456D", "QWER")
+                 , ("789E", "ASDF")
+                 , ("A0BF", "ZXCV")
+                 ]
+      in [ sym ++ "  " ++ invert key | (sym, key) <- rows ]
+    reset <- labelled . db . (++ [0]) . map (fromIntegral . ord . toUpper) $
+        invert "RUN/BRK" <> ": Change game"
+    pure ()
+
+setup_ :: Location -> Z80ASM
+setup_ baseAddr = mdo
     -- Zero out CHIP-8 RAM
     ld DE baseAddr
     ld A 0
@@ -88,7 +182,7 @@ run baseAddr = mdo
     lfsrDE <- labelled lfsr10
 
     clearScreen <- labelled do
-        ld HL $ videoStart + 4
+        ld HL $ videoStart + 4 + 40 * 3
         ld DE 8
         decLoopB 16 do
             ld C B
