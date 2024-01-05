@@ -48,7 +48,7 @@ drawSprite vidBuf = mdo
     add IX DE
 
     -- Calculate starting target byte into HL
-    ld HL $ videoStart + 4 -- + 40 * 4
+    ld HL $ videoStart + 4 + 40 * 3
 
     -- Add Y/2 * 40 to HL
     replicateM_ 4 $ srl C
@@ -120,7 +120,12 @@ drawSprite vidBuf = mdo
             -- Convert bit pattern into character
             ld IY charmap
             add IY DE
-            ldVia A [HL] [IY]
+
+            -- Are we still in bounds?
+            ld A H
+            cp 0xc3
+            unlessFlag NC do
+                ldVia A [HL] [IY]
             inc HL
         pop BC
         inc IX
