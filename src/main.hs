@@ -21,17 +21,10 @@ import System.Directory
 main :: IO ()
 main = do
     image <- BS.readFile "/home/cactus/prog/rust/chirp8-sdl/hidden.ch8"
+    -- image <- BS.readFile "/home/cactus/prog/rust/chirp8-sdl/test-roms/6-keypad.ch8"
+
     (image', _) <- compressForward image
-    printf "%d -> %d\n" (BS.length image) (BS.length image')
-
-    emit "_build/chip80" $ org 20000 $ mdo
-        let baseAddr = 0x7000
-        ld SP $ baseAddr - (256 + 16) - 1
-
-        ld IX compressedProg
-        CHIP80.game baseAddr
-        compressedProg <- labelled $ db image'
-        pure ()
+    emit "_build/chip80" $ org 20000 $ CHIP80.game image'
 
 emit :: String -> ASMBlock -> IO ()
 emit name block = do
