@@ -19,12 +19,15 @@ import Data.List (sortBy, groupBy, intercalate)
 import Data.Function (on)
 import Data.Default
 
-game :: BS.ByteString -> Z80ASM
-game image = mdo
+game :: [(String, BS.ByteString)] -> Z80ASM
+game images = mdo
     let baseAddr = 0x7000
     ld SP $ baseAddr - (256 + 16) - 1
 
-    ld IX compressedProg
+    ld IX prog
     machine baseAddr
-    compressedProg <- labelled $ db image
+
+    progs <- forM images \(name, image) -> do
+        labelled $ db image
+    let prog = progs!!1
     pure ()
