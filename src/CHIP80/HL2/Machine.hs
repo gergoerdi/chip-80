@@ -177,6 +177,13 @@ run baseAddr = mdo
     cpu <- labelled $ cpu_ def platform
     newFrame <- labelled $ newFrame_ platform
     rnd <- labelled $ dw [0xf00f]
+
+    -- Quirks
+    shiftVY <- labelled $ db [1]
+    resetVF <- labelled $ db [1]
+    incrementPtr <- labelled $ db [1]
+    videoWait <- labelled $ db [1]
+
     lfsrDE <- labelled lfsr10
 
     clearScreen <- labelled do

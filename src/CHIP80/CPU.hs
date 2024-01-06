@@ -14,17 +14,13 @@ import Data.Char
 import Data.Default
 
 data Quirks = Quirks
-    { shiftVY, resetVF, incrementPtr, videoWait, clipSprites :: Bool
+    { clipSprites :: Bool
     }
     deriving (Show)
 
 instance Default Quirks where
     def = Quirks
-        { shiftVY = True
-        , resetVF = True
-        , incrementPtr = True
-        , videoWait = True
-        , clipSprites = True
+        { clipSprites = True
         }
 
 data Platform = Platform
@@ -37,6 +33,11 @@ data Platform = Platform
     , waitForFrame :: Location
     , lfsrDE :: Location
     , rnd :: Location
+
+    , shiftVY :: Location
+    , resetVF :: Location
+    , incrementPtr :: Location
+    , videoWait :: Location
     }
 
 newFrame_ :: Platform -> Z80ASM
@@ -302,20 +303,27 @@ cpu_ Quirks{..} Platform{..} = mdo
         mov_ <- labelled do
             ld [IX] C
             ret
+
+        let quirkResetVF = do
+                ld A [resetVF]
+                Z80.and A
+                unlessFlag Z do
+                    ldVia A [flag] 0
+
         or_ <- labelled do
             Z80.or C
             ld [IX] A
-            when resetVF $ ldVia A [flag] 0
+            quirkResetVF
             ret
         and_ <- labelled do
             Z80.and C
             ld [IX] A
-            when resetVF $ ldVia A [flag] 0
+            quirkResetVF
             ret
         xor_ <- labelled do
             Z80.xor C
             ld [IX] A
-            when resetVF $ ldVia A [flag] 0
+            quirkResetVF
             ret
         add_ <- labelled do
             add A C
@@ -331,21 +339,24 @@ cpu_ Quirks{..} Platform{..} = mdo
             sub D
             ld [IX] A
             setFlagFromNC
+
+        let quirkShiftVY = do
+                ld HL shiftVY
+                ld D [HL]
+                inc D
+                dec D
+                unlessFlag Z do
+                    ld A C
+
         shiftRight_ <- labelled do
-            if shiftVY then do
-                srl C
-                ld [IX] C
-              else do
-                srl A
-                ld [IX] A
+            quirkShiftVY
+            srl A
+            ld [IX] A
             setFlagFromC
         shiftLeft_ <- labelled do
-            if shiftVY then do
-                sla C
-                ld [IX] C
-              else do
-                sla A
-                ld [IX] A
+            quirkShiftVY
+            sla A
+            ld [IX] A
             setFlagFromC
 
         funs <- labelled $ dw
@@ -539,8 +550,14 @@ cpu_ Quirks{..} Platform{..} = mdo
             pop AF
             djnz loopRow
         call spritePost
-        when videoWait $ ldVia A [waitForFrame] 1
+
+        ld A [videoWait]
+        Z80.and A
+        ret Z
+        ldVia A [waitForFrame] 1
+
         ret
+
         nextRow <- labelled $ db [0]
         pure ()
 
@@ -690,6 +707,14 @@ cpu_ Quirks{..} Platform{..} = mdo
             ldVia A [state] 1
             ret
 
+        let quirkIncrementPtr = do
+                ld A [incrementPtr]
+                Z80.and A
+                unlessFlag Z do
+                    ld HL [ptr]
+                    add HL BC
+                    ld [ptr] HL
+
         storeRegs <- labelled do -- StoreRegs VX
             -- Set BC to number of registers to store
             ld A B
@@ -709,10 +734,7 @@ cpu_ Quirks{..} Platform{..} = mdo
             push BC -- We'll need this to compute new value of pointer register
             ldir
             pop BC
-            when incrementPtr do
-                ld HL [ptr]
-                add HL BC
-                ld [ptr] HL
+            quirkIncrementPtr
             ret
 
         loadRegs <- labelled do -- LoadRegs VX
@@ -733,10 +755,7 @@ cpu_ Quirks{..} Platform{..} = mdo
             push BC
             ldir
             pop BC
-            when incrementPtr do
-                ld HL [ptr]
-                add HL BC
-                ld [ptr] HL
+            quirkIncrementPtr
             ret
         pure ()
 
