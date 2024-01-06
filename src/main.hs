@@ -25,7 +25,11 @@ main = do
     printf "%d -> %d\n" (BS.length image) (BS.length image')
 
     emit "_build/chip80" $ org 20000 $ mdo
-        CHIP80.game compressedProg
+        let baseAddr = 0x7000
+        ld SP $ baseAddr - (256 + 16) - 1
+
+        ld IX compressedProg
+        CHIP80.game baseAddr
         compressedProg <- labelled $ db image'
         pure ()
 

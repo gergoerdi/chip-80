@@ -23,17 +23,16 @@ import Data.List (sortBy, groupBy, intercalate)
 import Data.Function (on)
 import Data.Default
 
+-- | Pre: `IX` contains address of compressed program
 game :: Location -> Z80ASM
-game compressedProg = mdo
-    let baseAddr = 0x7000
-    ld SP $ baseAddr - (256 + 16) - 1
-
+game baseAddr = mdo
     call drawUI
 
     -- Uncompress program into CHIP-8 RAM
     call setup
 
-    ld HL compressedProg
+    push IX
+    pop HL
     ld DE $ baseAddr + 0x200
     call uncompress
 
