@@ -51,7 +51,6 @@ newFrame_ Platform{..} = do
     ld [timer] A
     ret
 
--- | `baseAddr` should be 12-bit-aligned
 -- | `IY`: PC
 cpu_ :: Quirks -> Platform -> Z80ASM
 cpu_ Quirks{..} Platform{..} = mdo
@@ -184,9 +183,10 @@ cpu_ Quirks{..} Platform{..} = mdo
     op1 <- labelled do -- Jump
         ld A B
         Z80.and 0x0f
-        Z80.or addressMask
         ld H A
         ld L C
+        ld DE baseAddr
+        add HL DE
         push HL
         pop IY
         ret
@@ -379,27 +379,25 @@ cpu_ Quirks{..} Platform{..} = mdo
     opA <- labelled do -- LoadPtr
         ld A B
         Z80.and 0x0f
-        Z80.or addressMask
         ld H A
         ld L C
         ld [ptr] HL
         ret
 
     opB <- labelled do -- JumpPlusV0
-        ld H B
+        ld D B
 
         ld A [regs]
         add A C
-        unlessFlag NC $ inc H
-        ld L A
+        unlessFlag NC $ inc D
+        ld E A
 
-        ld A H
+        ld A D
         Z80.and 0x0f
-        Z80.or addressMask
-        ld H A
+        ld D A
 
-        push HL
-        pop IY
+        ld IY baseAddr
+        add IY DE
         ret
 
     opC <- labelled do -- Randomize vx imm
@@ -449,6 +447,8 @@ cpu_ Quirks{..} Platform{..} = mdo
         Z80.and 0b111
 
         ld IX [ptr]
+        ld DE baseAddr
+        add IX DE
 
         -- `IX`: source (sprite data)
         -- `HL`: target (video buffer)
@@ -589,14 +589,17 @@ cpu_ Quirks{..} Platform{..} = mdo
             call loadVXtoA
             replicateM_ 3 rlca -- Multiply by 8
             Z80.and 0b0111_1000
-            ld DE baseAddr
+            ld D 0
             ld E A
             ld [ptr] DE
             ret
 
         storeBCD <- labelled mdo -- StoreBCD VX
             call loadVXtoA
+
             ld HL [ptr]
+            ld DE baseAddr
+            add HL DE
 
             -- Hundreds
             cp 200
@@ -650,10 +653,17 @@ cpu_ Quirks{..} Platform{..} = mdo
         addPtr <- labelled do -- AddPtr VX
             call loadVXtoA
             ld HL [ptr]
+
             -- Add A to low byte
             add A L
             unlessFlag NC $ inc H
             ld L A
+
+            -- Renormalize high byte
+            ld A H
+            Z80.and 0x0f
+            ld H A
+
             ld [ptr] HL
             ret
 
@@ -681,11 +691,10 @@ cpu_ Quirks{..} Platform{..} = mdo
             inc BC
 
             -- Set DE to memory address
-            ld DE [ptr]
-            ld A D
-            Z80.and 0x0f
-            Z80.or addressMask
-            ld D A
+            ld HL [ptr]
+            ld DE baseAddr
+            add HL DE
+            ex DE HL
 
             ld HL regs
 
@@ -708,10 +717,8 @@ cpu_ Quirks{..} Platform{..} = mdo
 
             -- Set HL to memory address
             ld HL [ptr]
-            ld A H
-            Z80.and 0x0f
-            Z80.or addressMask
-            ld H A
+            ld DE baseAddr
+            add HL DE
 
             ld DE regs
 
@@ -744,6 +751,3 @@ cpu_ Quirks{..} Platform{..} = mdo
       , opF
       ]
     pure ()
-  where
-    addressMask :: Word8
-    addressMask = fromIntegral $ (baseAddr .&. 0xf000) `shiftR` 8
