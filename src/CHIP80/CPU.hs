@@ -587,8 +587,7 @@ cpu_ Quirks{..} Platform{..} = mdo
 
         loadHex <- labelled do -- LoadHex VX
             call loadVXtoA
-            replicateM_ 3 do
-                rlca
+            replicateM_ 3 rlca -- Multiply by 8
             Z80.and 0b0111_1000
             ld DE baseAddr
             ld E A
@@ -651,9 +650,10 @@ cpu_ Quirks{..} Platform{..} = mdo
         addPtr <- labelled do -- AddPtr VX
             call loadVXtoA
             ld HL [ptr]
+            -- Add A to low byte
             add A L
-            ld L A
             unlessFlag NC $ inc H
+            ld L A
             ld [ptr] HL
             ret
 
@@ -673,35 +673,55 @@ cpu_ Quirks{..} Platform{..} = mdo
             ret
 
         storeRegs <- labelled do -- StoreRegs VX
+            -- Set BC to number of registers to store
             ld A B
             Z80.and 0x0f
             ld C A
             ld B 0
             inc BC
+
+            -- Set DE to memory address
             ld DE [ptr]
             ld A D
             Z80.and 0x0f
             Z80.or addressMask
             ld D A
+
             ld HL regs
+
+            push BC -- We'll need this to compute new value of pointer register
             ldir
-            when incrementPtr $ ld [ptr] DE
+            pop BC
+            when incrementPtr do
+                ld HL [ptr]
+                add HL BC
+                ld [ptr] HL
             ret
 
         loadRegs <- labelled do -- LoadRegs VX
+            -- Set BC to number of registers to store
             ld A B
             Z80.and 0x0f
             ld C A
             ld B 0
             inc BC
-            ld DE regs
+
+            -- Set HL to memory address
             ld HL [ptr]
             ld A H
             Z80.and 0x0f
             Z80.or addressMask
             ld H A
+
+            ld DE regs
+
+            push BC
             ldir
-            when incrementPtr $ ld [ptr] DE
+            pop BC
+            when incrementPtr do
+                ld HL [ptr]
+                add HL BC
+                ld [ptr] HL
             ret
         pure ()
 
