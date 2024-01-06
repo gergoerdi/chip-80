@@ -27,18 +27,6 @@ instance Default Quirks where
         , clipSprites = True
         }
 
-dbgA :: Z80ASM
-dbgA = do
-    call 0x01a5
-
-cr = do
-    ld A 0x0d
-    rst 0x28
-
-space = do
-    ld A 0x20
-    rst 0x28
-
 data Platform = Platform
     { baseAddr, vidAddr :: Location
     , spritePre :: Location
@@ -389,19 +377,12 @@ cpu_ Quirks{..} Platform{..} = mdo
         ret
 
     opA <- labelled do -- LoadPtr
-        -- space
-        -- space
-
         ld A B
         Z80.and 0x0f
         Z80.or addressMask
         ld H A
-        -- dbgA
         ld L C
         ld [ptr] HL
-        -- ld A C
-        -- dbgA
-        -- cr
         ret
 
     opB <- labelled do -- JumpPlusV0
