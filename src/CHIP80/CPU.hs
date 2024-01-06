@@ -481,20 +481,24 @@ cpu_ Quirks{..} Platform{..} = mdo
             add HL DE
             pop DE
 
+            -- Check collision
             ld C [HL]
             ld A D
             Z80.and C
             unlessFlag Z $ ldVia A [flag] 1
+
+            -- Draw pixel
             ld A D
             Z80.xor C
             ld [HL] A
+
             pop HL
 
             skippable \clipHorizontal -> do
                 -- Horizontal wrap-around
                 ldVia A [nextRow] 7
-                ld A L
                 inc L
+                ld A L
                 Z80.and 0b00000_111
                 if clipSprites then jp Z clipHorizontal else
                     unlessFlag NZ do
@@ -515,13 +519,17 @@ cpu_ Quirks{..} Platform{..} = mdo
                 add HL DE
                 pop DE
 
+                -- Check collision
                 ld C [HL]
                 ld A E
                 Z80.and C
                 unlessFlag Z $ ldVia A [flag] 1
+
+                -- Draw pixel
                 ld A E
                 Z80.xor C
                 ld [HL] A
+
                 pop HL
 
             ld D 0
