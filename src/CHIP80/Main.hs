@@ -56,21 +56,101 @@ withGamesFrom dir = do
 
 game :: [(String, Quirks Bool, BS.ByteString)] -> Z80ASM
 game images = mdo
+    -- Restore input vector
+    ldVia A [0x4002] 0x06
+    ldVia A [0x4003] 0x03
+
     let baseAddr = 0x7000
     ld SP $ baseAddr - (256 + 16) - 1
 
-    let (quirks, prog) = progs!!4
-    ld IX quirks
-    ld IY prog
-    machine baseAddr
+    loopForever do
+        -- Clear screen
+        ld A 0x0c
+        rst 0x28
 
-    progs <- forM images \(name, Quirks{..}, image) -> do
+        ld HL banner
+        call println
+
+        -- Print menu of available programs
+        let space = do
+                ld A 0x20
+                rst 0x28
+        ld C $ fromIntegral . ord $ '1'
+        ld IX titleTable
+        decLoopB (fromIntegral $ length progs) do
+            ld L [IX]
+            inc IX
+            ld H [IX]
+            inc IX
+
+            space
+            ld A C
+            inc C
+            rst 0x28
+            space
+
+            call println
+
+        withLabel \inputLoop -> do
+            rst 0x18
+            sub $ fromIntegral . ord $ '1'
+            jp C inputLoop
+
+            cp (fromIntegral $ length progs + 1)
+            jp NC inputLoop
+
+            ld D 0
+            sla A
+            ld E A
+
+            ld HL quirksTable
+            add HL DE
+            ld C [HL]
+            inc HL
+            ld B [HL]
+            push BC
+            pop IX
+
+            ld HL progTable
+            add HL DE
+            ld C [HL]
+            inc HL
+            ld B [HL]
+            push BC
+            pop IY
+
+            machine baseAddr
+        loopForever $ pure ()
+
+    -- TODO: share this with rest of the code
+    banner <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $ invert "   CHIP-80     https://gergo.erdi.hu/   "
+
+    print <- labelled do
+        loopForever do
+            ld A [HL]
+            Z80.and A
+            ret Z
+            rst 0x28
+            inc HL
+
+    println <- labelled do
+        call print
+        ld A $ fromIntegral . ord $ '\r'
+        rst 0x28
+        ret
+
+    progs <- forM images \(title, Quirks{..}, image) -> do
         let boolToByte = \case
                 True -> 1
                 False -> 0
 
+        name <- labelled $ db $ (<> [0]) . take 16 . map (fromIntegral . ord . toUpper) $ title
         quirks <- labelled $ db . map boolToByte $
             [ shiftVY, resetVF, incrementPtr, videoWait, clipSprites ]
         prog <- labelled $ db image
-        pure (quirks, prog)
+        pure (name, quirks, prog)
+
+    titleTable <- labelled $ dw [ title | (title, _, _) <- progs ]
+    quirksTable <- labelled $ dw [ quirks | (_, quirks, _) <- progs ]
+    progTable <- labelled $ dw [ prog | (_, _, prog) <- progs ]
     pure ()
