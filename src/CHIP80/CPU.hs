@@ -54,7 +54,30 @@ newFrame_ Platform{..} = do
 
 -- | `IY`: PC
 cpu_ :: Quirks -> Platform -> Z80ASM
-cpu_ Quirks{..} Platform{..} = mdo
+cpu_ Quirks{-{..}-} Platform{..} = mdo
+    let checkQuirk quirk = do
+            push HL
+            push BC
+            ld HL quirk
+            ld C [HL]
+            inc C
+            dec C
+            pop BC
+            pop HL
+        ifQuirk quirk thn els = do
+            checkQuirk quirk
+            skippable \end -> mdo
+                jp NZ true
+                false <- labelled do
+                    els
+                    jp end
+                true <- labelled do
+                    thn
+                pure ()
+        whenQuirk quirk body = do
+            checkQuirk quirk
+            unlessFlag Z body
+
     ld A [state]
     cp 1
     jp Z waitPress
@@ -304,26 +327,20 @@ cpu_ Quirks{..} Platform{..} = mdo
             ld [IX] C
             ret
 
-        let quirkResetVF = do
-                ld A [resetVF]
-                Z80.and A
-                unlessFlag Z do
-                    ldVia A [flag] 0
-
         or_ <- labelled do
             Z80.or C
             ld [IX] A
-            quirkResetVF
+            whenQuirk resetVF $ ldVia A [flag] 0
             ret
         and_ <- labelled do
             Z80.and C
             ld [IX] A
-            quirkResetVF
+            whenQuirk resetVF $ ldVia A [flag] 0
             ret
         xor_ <- labelled do
             Z80.xor C
             ld [IX] A
-            quirkResetVF
+            whenQuirk resetVF $ ldVia A [flag] 0
             ret
         add_ <- labelled do
             add A C
@@ -340,21 +357,13 @@ cpu_ Quirks{..} Platform{..} = mdo
             ld [IX] A
             setFlagFromNC
 
-        let quirkShiftVY = do
-                ld HL shiftVY
-                ld D [HL]
-                inc D
-                dec D
-                unlessFlag Z do
-                    ld A C
-
         shiftRight_ <- labelled do
-            quirkShiftVY
+            whenQuirk shiftVY $ ld A C
             srl A
             ld [IX] A
             setFlagFromC
         shiftLeft_ <- labelled do
-            quirkShiftVY
+            whenQuirk shiftVY $ ld A C
             sla A
             ld [IX] A
             setFlagFromC
@@ -464,7 +473,7 @@ cpu_ Quirks{..} Platform{..} = mdo
         -- `IX`: source (sprite data)
         -- `HL`: target (video buffer)
         skippable \clipVertical -> withLabel \loopRow -> do
-            when clipSprites do
+            whenQuirk clipSprites do
                 -- Is `HL` now over line 31?
                 ld E A
                 ld A H
@@ -498,7 +507,7 @@ cpu_ Quirks{..} Platform{..} = mdo
             Z80.and C
             unlessFlag Z $ ldVia A [flag] 1
 
-            -- Draw pixel
+            -- Draw pixels
             ld A D
             Z80.xor C
             ld [HL] A
@@ -707,14 +716,6 @@ cpu_ Quirks{..} Platform{..} = mdo
             ldVia A [state] 1
             ret
 
-        let quirkIncrementPtr = do
-                ld A [incrementPtr]
-                Z80.and A
-                unlessFlag Z do
-                    ld HL [ptr]
-                    add HL BC
-                    ld [ptr] HL
-
         storeRegs <- labelled do -- StoreRegs VX
             -- Set BC to number of registers to store
             ld A B
@@ -734,7 +735,10 @@ cpu_ Quirks{..} Platform{..} = mdo
             push BC -- We'll need this to compute new value of pointer register
             ldir
             pop BC
-            quirkIncrementPtr
+            whenQuirk incrementPtr do
+                ld HL [ptr]
+                add HL BC
+                ld [ptr] HL
             ret
 
         loadRegs <- labelled do -- LoadRegs VX
@@ -755,7 +759,10 @@ cpu_ Quirks{..} Platform{..} = mdo
             push BC
             ldir
             pop BC
-            quirkIncrementPtr
+            whenQuirk incrementPtr do
+                ld HL [ptr]
+                add HL BC
+                ld [ptr] HL
             ret
         pure ()
 

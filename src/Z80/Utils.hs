@@ -50,3 +50,10 @@ unlessFlag :: (Jump cc (Location -> Z80ASM)) => cc -> Z80 a -> Z80 a
 unlessFlag f body = skippable \end -> do
     jp f end :: Z80ASM
     body
+
+whenFlag :: (Jump cc (Location -> Z80ASM)) => cc -> Z80 a -> Z80 a
+whenFlag f body = skippable \false -> mdo
+    jp f true :: Z80ASM
+    jp false
+    true <- label
+    body
