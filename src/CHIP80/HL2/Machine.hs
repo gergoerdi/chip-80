@@ -174,15 +174,17 @@ run baseAddr = mdo
     waitForFrame <- labelled $ db [0]
 
     let platform = Platform{ vidAddr = vidBuf, .. }
-    cpu <- labelled $ cpu_ def platform
+    cpu <- labelled $ cpu_ quirks platform
     newFrame <- labelled $ newFrame_ platform
     rnd <- labelled $ dw [0xf00f]
 
-    -- Quirks
-    shiftVY <- labelled $ db [1]
-    resetVF <- labelled $ db [1]
-    incrementPtr <- labelled $ db [1]
-    videoWait <- labelled $ db [1]
+    quirks <- do
+        shiftVY <- labelled $ db [1]
+        resetVF <- labelled $ db [1]
+        incrementPtr <- labelled $ db [1]
+        videoWait <- labelled $ db [1]
+        clipSprites <- labelled $ db [1]
+        pure Quirks{..}
 
     lfsrDE <- labelled lfsr10
 

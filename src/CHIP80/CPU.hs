@@ -1,6 +1,6 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards #-}
 {-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 module CHIP80.CPU where
 
 import Z80
@@ -13,14 +13,18 @@ import Data.Bits
 import Data.Char
 import Data.Default
 
-data Quirks = Quirks
-    { clipSprites :: Bool
+data Quirks a = Quirks
+    { shiftVY, resetVF, incrementPtr, videoWait, clipSprites :: a
     }
     deriving (Show)
 
-instance Default Quirks where
+instance Default (Quirks Bool) where
     def = Quirks
-        { clipSprites = True
+        { shiftVY = True
+        , resetVF = True
+        , incrementPtr = True
+        , videoWait = True
+        , clipSprites = True
         }
 
 data Platform = Platform
@@ -33,11 +37,6 @@ data Platform = Platform
     , waitForFrame :: Location
     , lfsrDE :: Location
     , rnd :: Location
-
-    , shiftVY :: Location
-    , resetVF :: Location
-    , incrementPtr :: Location
-    , videoWait :: Location
     }
 
 newFrame_ :: Platform -> Z80ASM
@@ -53,8 +52,8 @@ newFrame_ Platform{..} = do
     ret
 
 -- | `IY`: PC
-cpu_ :: Quirks -> Platform -> Z80ASM
-cpu_ Quirks{-{..}-} Platform{..} = mdo
+cpu_ :: Quirks Location -> Platform -> Z80ASM
+cpu_ Quirks{..} Platform{..} = mdo
     let checkQuirk quirk = do
             push HL
             push BC
@@ -514,43 +513,7 @@ cpu_ Quirks{-{..}-} Platform{..} = mdo
 
             pop HL
 
-            skippable \clipHorizontal -> do
-                -- Horizontal wrap-around
-                ldVia A [nextRow] 7
-                inc L
-                ld A L
-                Z80.and 0b00000_111
-                if clipSprites then jp Z clipHorizontal else
-                    unlessFlag NZ do
-                      ld A L
-                      sub 8
-                      ld L A
-                      ldVia A [nextRow] (7 + 8)
-
-                when clipSprites do
-                    -- Is `HL` now wrapped over to the next line?
-                    ld A L
-                    Z80.and 0b111
-                    jp Z clipHorizontal
-
-                push HL
-                push DE
-                ld DE vidAddr
-                add HL DE
-                pop DE
-
-                -- Check collision
-                ld C [HL]
-                ld A E
-                Z80.and C
-                unlessFlag Z $ ldVia A [flag] 1
-
-                -- Draw pixel
-                ld A E
-                Z80.xor C
-                ld [HL] A
-
-                pop HL
+            call drawSecondByte
 
             ld D 0
             ldVia A E [nextRow]
@@ -568,6 +531,47 @@ cpu_ Quirks{-{..}-} Platform{..} = mdo
         ret
 
         nextRow <- labelled $ db [0]
+        drawSecondByte <- labelled do
+            -- Horizontal wrap-around
+            ldVia A [nextRow] 7
+            inc L
+            ld A L
+            ifQuirk clipSprites
+              (do
+                      Z80.and 0b00000_111
+                      ret Z
+
+                      -- Is `HL` now wrapped over to the next line?
+                      ld A L
+                      Z80.and 0b111
+                      ret Z)
+              (do
+                      Z80.and 0b00000_111
+                      unlessFlag NZ do
+                          ld A L
+                          sub 8
+                          ld L A
+                          ldVia A [nextRow] (7 + 8))
+
+            push HL
+            push DE
+            ld DE vidAddr
+            add HL DE
+            pop DE
+
+            -- Check collision
+            ld C [HL]
+            ld A E
+            Z80.and C
+            unlessFlag Z $ ldVia A [flag] 1
+
+            -- Draw pixels
+            ld A E
+            Z80.xor C
+            ld [HL] A
+
+            pop HL
+            ret
         pure ()
 
     opE <- labelled mdo -- SkipKey vx
