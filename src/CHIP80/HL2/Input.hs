@@ -12,6 +12,7 @@ import Data.List (sortBy, groupBy)
 import Data.Function (on)
 
 -- | Scan the keyboard and write its state to the 16 bytes starting at `keyBuf`
+--   Post: Z flag iff the run/brk key was pressed
 scanKeys_ :: Location -> Z80ASM
 scanKeys_ keyBuf = do
     forM_ sortedKeymap \(keys@((addr, _):_)) -> do
@@ -21,6 +22,8 @@ scanKeys_ keyBuf = do
             ld [HL] 0x00
             Z80.bit i A
             unlessFlag NZ $ dec [HL]
+    ld A [0x3afd]
+    Z80.bit 7 A
     ret
   where
     sortedKeymap =

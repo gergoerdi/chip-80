@@ -1,7 +1,7 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE FlexibleContexts #-}
-module CHIP80.HL2.Machine (machine) where
+module CHIP80.HL2.Machine (machine_) where
 
 import HL2
 import CHIP80.CPU
@@ -25,8 +25,8 @@ import Data.Function (on)
 
 -- | Pre: `IX` contains address of quirks settings
 -- | Pre: `IY` contains address of compressed program
-machine :: Location -> Z80ASM
-machine baseAddr = mdo
+machine_ :: Location -> Z80ASM
+machine_ baseAddr = mdo
     call drawUI
     call setup
 
@@ -181,6 +181,7 @@ run quirks baseAddr = mdo
         unlessFlag Z do
             ld [lastFrame] A
             call scanKeys
+            ret Z
             call newFrame
 
     timer <- labelled $ db [0]

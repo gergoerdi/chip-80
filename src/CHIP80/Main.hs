@@ -119,8 +119,7 @@ game images = mdo
             push BC
             pop IY
 
-            machine baseAddr
-        loopForever $ pure ()
+            call machine
 
     -- TODO: share this with rest of the code
     banner <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $ invert "   CHIP-80     https://gergo.erdi.hu/   "
@@ -138,6 +137,8 @@ game images = mdo
         ld A $ fromIntegral . ord $ '\r'
         rst 0x28
         ret
+
+    machine <- labelled $ machine_ baseAddr
 
     progs <- forM images \(title, Quirks{..}, image) -> do
         let boolToByte = \case
