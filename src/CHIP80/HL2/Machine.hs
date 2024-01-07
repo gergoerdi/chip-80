@@ -5,6 +5,7 @@ module CHIP80.HL2.Machine (machine) where
 
 import HL2
 import CHIP80.CPU
+import CHIP80.Quirks
 import CHIP80.Font
 import CHIP80.HL2.Input
 import CHIP80.HL2.Video
@@ -21,25 +22,38 @@ import Data.Char
 import qualified Data.ByteString as BS
 import Data.List (sortBy, groupBy, intercalate)
 import Data.Function (on)
-import Data.Default
 
--- | Pre: `IX` contains address of compressed program
+-- | Pre: `IX` contains address of quirks settings
+-- | Pre: `IY` contains address of compressed program
 machine :: Location -> Z80ASM
 machine baseAddr = mdo
     call drawUI
     call setup
 
+    ldVia A [shiftVY] [IX + 0]
+    ldVia A [resetVF] [IX + 1]
+    ldVia A [incrementPtr] [IX + 2]
+    ldVia A [videoWait] [IX + 3]
+    ldVia A [clipSprites] [IX + 4]
+
     -- Uncompress program into CHIP-8 RAM
-    push IX
+    push IY
     pop HL
     ld DE $ baseAddr + 0x200
     call uncompress
 
-    run baseAddr
+    run quirks baseAddr
 
     drawUI <- labelled drawUI_
     setup <- labelled $ setup_ baseAddr
     uncompress <- labelled standardFwd
+    quirks@Quirks{..} <- do
+        shiftVY <- labelled $ db [1]
+        resetVF <- labelled $ db [1]
+        incrementPtr <- labelled $ db [1]
+        videoWait <- labelled $ db [1]
+        clipSprites <- labelled $ db [1]
+        pure Quirks{..}
 
     pure ()
 
@@ -153,8 +167,8 @@ setup_ baseAddr = mdo
     hex <- labelled $ db font
     pure ()
 
-run :: Location -> Z80ASM
-run baseAddr = mdo
+run :: Quirks Location -> Location -> Z80ASM
+run quirks baseAddr = mdo
     let vidBuf = baseAddr - 256
         keyBuf = vidBuf - 16
 
@@ -177,14 +191,6 @@ run baseAddr = mdo
     cpu <- labelled $ cpu_ quirks platform
     newFrame <- labelled $ newFrame_ platform
     rnd <- labelled $ dw [0xf00f]
-
-    quirks <- do
-        shiftVY <- labelled $ db [1]
-        resetVF <- labelled $ db [1]
-        incrementPtr <- labelled $ db [1]
-        videoWait <- labelled $ db [1]
-        clipSprites <- labelled $ db [1]
-        pure Quirks{..}
 
     lfsrDE <- labelled lfsr10
 

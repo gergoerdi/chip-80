@@ -14,7 +14,9 @@ dependencies:
   - bytestring
   - filepath
   - directory
-  - data-default
+  - yaml
+  - aeson
+  - text
 
 source-dirs:
   - src

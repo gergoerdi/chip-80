@@ -1,31 +1,20 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 module CHIP80.CPU where
 
 import Z80
 import Z80.Utils
+
+import CHIP80.Quirks
 
 import Data.Word
 import Data.Int
 import Control.Monad
 import Data.Bits
 import Data.Char
-import Data.Default
-
-data Quirks a = Quirks
-    { shiftVY, resetVF, incrementPtr, videoWait, clipSprites :: a
-    }
-    deriving (Show)
-
-instance Default (Quirks Bool) where
-    def = Quirks
-        { shiftVY = True
-        , resetVF = True
-        , incrementPtr = True
-        , videoWait = True
-        , clipSprites = True
-        }
+import Data.Maybe (fromMaybe)
 
 data Platform = Platform
     { baseAddr, vidAddr :: Location

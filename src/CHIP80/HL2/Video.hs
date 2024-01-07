@@ -15,9 +15,6 @@ import Control.Monad
 import Data.Bits
 import Data.Char
 import qualified Data.ByteString as BS
-import Data.List (sortBy, groupBy)
-import Data.Function (on)
-import Data.Default
 
 pictureWidth :: Word8
 pictureWidth = 64

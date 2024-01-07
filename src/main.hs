@@ -20,31 +20,7 @@ import System.Directory
 
 main :: IO ()
 main = do
-do
-    let files =
-            [ "/home/cactus/prog/rust/chirp8-sdl/hidden.ch8"
-            -- , "/home/cactus/prog/haskell/chip8/import/CHIP8/GAMES/Rush Hour.c8"
-            -- , "/home/cactus/prog/rust/chirp8-sdl/hello.ch8"
-            -- , "/home/cactus/prog/haskell/chip8/import/CHIP8/GAMES/TICTAC"
-            -- , "/home/cactus/prog/rust/chirp8-sdl/test-roms/1-chip8-logo.ch8"
-            -- , "/home/cactus/prog/rust/chirp8-sdl/test-roms/2-ibm-logo.ch8"
-            -- , "/home/cactus/prog/rust/chirp8-sdl/test-roms/3-corax+.ch8"
-            -- , "/home/cactus/prog/rust/chirp8-sdl/test-roms/4-flags.ch8"
-            -- , "/home/cactus/prog/rust/chirp8-sdl/test-roms/5-quirks.ch8"
-            , "/home/cactus/prog/rust/chirp8-sdl/test-roms/6-keypad.ch8"
-            ]
-    images <- forM files \file -> do
-        let name = take 16 . map toUpper $ takeBaseName file
-        (image, _) <- compressForward =<< BS.readFile file
-        pure (name, image)
-
-    sizes <- forM images \(name, image) -> do
-        let size = BS.length image
-        printf "%-16s %4d\n" name size
-        pure size
-    printf "%-16s %d\n" "Total:" (sum sizes)
-
-    emit "_build/chip80" $ org 20000 $ CHIP80.game images
+    emit "_build/chip80" =<< org 20000 <$> CHIP80.withGamesFrom "data/games"
 
 emit :: String -> ASMBlock -> IO ()
 emit name block = do
