@@ -10,11 +10,17 @@ ghostEscape:
   title: Ghost Escape
   videoWait: off
   
-tic-tac-toe:
+# tic-tac-toe:
+#   shiftVY: off
+#   resetVF: off
+#   incrementPtr: off
+
+invaders:
+  title: Space Invaders
   shiftVY: off
   resetVF: off
   incrementPtr: off
-  
+
 # superpong:
 #   title: Super PONG
 #   videoWait: off
