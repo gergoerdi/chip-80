@@ -28,6 +28,10 @@ data Platform = Platform
     , rnd :: Location
     }
 
+data Vars = Vars
+    { ptr, regs, flag, stack, sp, state :: Location
+    }
+
 newFrame_ :: Platform -> Z80ASM
 newFrame_ Platform{..} = do
     ldVia A [waitForFrame] 0
@@ -40,9 +44,32 @@ newFrame_ Platform{..} = do
     ld [timer] A
     ret
 
+vars_ :: Z80 Vars
+vars_ = do
+    ptr <- labelled $ dw [0]
+    regs <- labelled $ db $ replicate 16 0
+    let flag = regs + 0xf
+    stack <- labelled $ dw $ replicate 24 0
+    sp <- labelled $ dw [stack]
+    state <- labelled $ db [0]
+    pure Vars{..}
+
+reset :: Vars -> Z80ASM
+reset Vars{..} = do
+    ld A 0
+    ld HL regs
+    decLoopB 16 do
+        ld [HL] A
+        inc HL
+    forM_ [ptr, ptr + 1, state] \addr -> ld [addr] A
+    ldVia A [sp] stackLo
+    ldVia A [sp + 1] stackHi
+  where
+    (stackLo, stackHi) = wordBytes stack
+
 -- | `IY`: PC
-cpu_ :: Quirks Location -> Platform -> Z80ASM
-cpu_ Quirks{..} Platform{..} = mdo
+cpu_ :: Quirks Location -> Vars -> Platform -> Z80ASM
+cpu_ Quirks{..} vars@Vars{..} Platform{..} = mdo
     let checkQuirk quirk = do
             push HL
             push BC
@@ -73,7 +100,6 @@ cpu_ Quirks{..} Platform{..} = mdo
     jp Z waitRelease
     jp step
 
-    state <- labelled $ db [0]
     prevKeyBuf <- labelled $ db $ replicate 16 0
     keyAddr <- labelled $ dw [0]
 
@@ -161,12 +187,6 @@ cpu_ Quirks{..} Platform{..} = mdo
     inc IX
     ld H [IX]
     code [0xe9] -- jp [HL]
-
-    ptr <- labelled $ dw [0]
-    regs <- labelled $ db $ replicate 16 0
-    let flag = regs + 0xf
-    stack <- labelled $ dw $ replicate 24 0
-    sp <- labelled $ dw [stack]
 
     op0 <- labelled do
         ld A C

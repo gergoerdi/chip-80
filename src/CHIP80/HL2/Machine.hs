@@ -172,6 +172,8 @@ run quirks baseAddr = mdo
     let vidBuf = baseAddr - 256
         keyBuf = vidBuf - 16
 
+    reset vars
+
     ld IY $ baseAddr + 0x200
     loopForever do
         call cpu
@@ -184,12 +186,14 @@ run quirks baseAddr = mdo
             ret Z
             call newFrame
 
+    vars <- vars_
+
     timer <- labelled $ db [0]
     lastFrame <- labelled $ db [0]
     waitForFrame <- labelled $ db [0]
 
     let platform = Platform{ vidAddr = vidBuf, .. }
-    cpu <- labelled $ cpu_ quirks platform
+    cpu <- labelled $ cpu_ quirks vars platform
     newFrame <- labelled $ newFrame_ platform
     rnd <- labelled $ dw [0xf00f]
 
