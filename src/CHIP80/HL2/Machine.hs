@@ -171,7 +171,7 @@ run quirks baseAddr = mdo
     let vidBuf = baseAddr - 256
         keyBuf = vidBuf - 16
 
-    reset locs
+    reset locs platform
 
     ld IY $ baseAddr + 0x200
     loopForever do

@@ -61,16 +61,25 @@ allocate = do
     lfsr <- labelled lfsr10
     pure Locations{..}
 
-reset :: Locations -> Z80ASM
-reset Locations{..} = do
+reset :: Locations -> Platform -> Z80ASM
+reset Locations{..} Platform{..} = do
     ld A 0
+
+    ld HL vidAddr
+    decLoopB 256 do
+        ld [HL] A
+        inc HL
+
     ld HL regs
     decLoopB 16 do
         ld [HL] A
         inc HL
+
     forM_ [ptr, ptr + 1, state, timer] \addr -> ld [addr] A
+
     ldVia A [sp] stackLo
     ldVia A [sp + 1] stackHi
+
   where
     (stackLo, stackHi) = wordBytes stack
 
