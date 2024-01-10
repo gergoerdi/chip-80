@@ -17,6 +17,7 @@ dependencies:
   - yaml
   - aeson
   - text
+  - JuicyPixels
 
 source-dirs:
   - src

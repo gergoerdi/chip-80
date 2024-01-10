@@ -15,6 +15,7 @@ import Control.Monad
 import Data.Bits
 import Data.Char
 import qualified Data.ByteString as BS
+import Codec.Picture
 
 pictureWidth :: Num a => a
 pictureWidth = 64
@@ -152,22 +153,59 @@ drawSprite vidBuf = mdo
 
     isLastColumn <- labelled $ db [0]
 
-    charmap <- labelled $ db
-        [ 0x20 -- 00_00
-        , 0xf2 -- 00_01
-        , 0xf1 -- 00_10
-        , 0x9c -- 00_11
-        , 0xf0 -- 01_00
-        , 0xfa -- 01_01
-        , 0xf4 -- 01_10
-        , 0xf8 -- 01_11
-        , 0xef -- 10_00
-        , 0xf3 -- 10_01
-        , 0xe4 -- 10_10
-        , 0xf7 -- 10_11
-        , 0xf9 -- 11_00
-        , 0xf6 -- 11_01
-        , 0xf5 -- 11_10
-        , 0xe0 -- 11_11
-        ]
+    charmap <- labelled $ db charmapHL2
     pure ()
+
+charmapHL2 :: [Word8]
+charmapHL2 =
+    [ 0x20 -- 00_00
+    , 0xf2 -- 00_01
+    , 0xf1 -- 00_10
+    , 0x9c -- 00_11
+    , 0xf0 -- 01_00
+    , 0xfa -- 01_01
+    , 0xf4 -- 01_10
+    , 0xf8 -- 01_11
+    , 0xef -- 10_00
+    , 0xf3 -- 10_01
+    , 0xe4 -- 10_10
+    , 0xf7 -- 10_11
+    , 0xf9 -- 11_00
+    , 0xf6 -- 11_01
+    , 0xf5 -- 11_10
+    , 0xe0 -- 11_11
+    ]
+
+encodeFromPng :: BS.ByteString -> (Word8, Word8, [Word8])
+encodeFromPng bs = (byteWidth, byteHeight, bytes)
+  where
+    byteWidth = fromIntegral $ pixelWidth `div` 2
+    byteHeight = fromIntegral $ pixelHeight `div` 2
+
+    bytes = concatMap encodeRow $ doubles . map doubles $ bits
+      where
+        encodeRow = uncurry $ zipWith encodeBlock
+        encodeBlock (a, b) (c, d) = charmapHL2 !! idx
+          where
+            idx =
+                (if a then 0b1000 else 0b0000) .|.
+                (if b then 0b0100 else 0b0000) .|.
+                (if c then 0b0010 else 0b0000) .|.
+                (if d then 0b0001 else 0b0000)
+
+    bits = [ [ pixelOpacity pixel /= 0
+             | x <- [0..pixelWidth - 1]
+             , let pixel = pixelAt img x y
+             ]
+           | y <- [0..pixelHeight - 1]
+           ]
+      where
+        img = convertRGBA8 dimg
+
+    doubles :: [a] -> [(a, a)]
+    doubles (x1:x2:xs) = (x1, x2):doubles xs
+    doubles [] = []
+
+    Right dimg = decodePng bs
+    pixelWidth = dynamicMap imageWidth dimg
+    pixelHeight = dynamicMap imageHeight dimg

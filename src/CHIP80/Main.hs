@@ -6,6 +6,7 @@ module CHIP80.Main (withGamesFrom) where
 import HL2
 import CHIP80.Quirks
 import CHIP80.HL2.Machine
+import CHIP80.HL2.Video (encodeFromPng)
 import Z80.ZX0
 import Z80.ZX0.Compress
 
@@ -32,6 +33,7 @@ import Text.Printf
 
 withGamesFrom :: FilePath -> IO Z80ASM
 withGamesFrom dir = do
+    logo <- BS.readFile (dir </> "logo.png")
     yaml <- decodeFileThrow (dir </> "games.yaml")
 
     images <- forM (KeyMap.toList yaml) \(name, vals) -> do
@@ -52,10 +54,10 @@ withGamesFrom dir = do
         pure size
     printf "%-16s %d\n" "Total:" (sum sizes)
 
-    pure $ game images
+    pure $ game images logo
 
-game :: [(String, Quirks Bool, BS.ByteString)] -> Z80ASM
-game images = mdo
+game :: [(String, Quirks Bool, BS.ByteString)] -> BS.ByteString -> Z80ASM
+game images logo = mdo
     -- Restore input vector
     ldVia A [0x4002] 0x06
     ldVia A [0x4003] 0x03
@@ -69,6 +71,34 @@ game images = mdo
         rst 0x28
 
         ld HL banner
+        call println
+
+        ld HL progCopy
+        call println
+        ld A $ fromIntegral . ord $ '\r'
+        rst 0x28
+
+        ld HL logoData
+        ld DE $ videoStart + 3 * numCols + fromIntegral ((numCols - logoWidth) `div` 2)
+        decLoopB logoHeight do
+            ld A B
+            ld BC $ fromIntegral logoWidth
+            ldir
+            ld B A
+
+            push HL
+            ld HL $ fromIntegral $ numCols - logoWidth
+            add HL DE
+            ex DE HL
+            pop HL
+
+            ld A $ fromIntegral . ord $ '\r'
+            rst 0x28
+
+        decLoopB 20 do
+            ld A 0x20
+            rst 0x28
+        ld HL logoCopy
         call println
 
         -- Print menu of available programs
@@ -124,6 +154,11 @@ game images = mdo
     -- TODO: share this with rest of the code
     banner <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $ invert "   CHIP-80     https://gergo.erdi.hu/   "
 
+    progCopy <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $
+        "Gergo Erdi's"
+    logoCopy <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $
+        "Logo by Tim Franssen"
+
     print <- labelled do
         loopForever do
             ld A [HL]
@@ -137,6 +172,9 @@ game images = mdo
         ld A $ fromIntegral . ord $ '\r'
         rst 0x28
         ret
+
+    let (logoWidth, logoHeight, logoBytes) = encodeFromPng logo
+    logoData <- labelled $ db logoBytes
 
     machine <- labelled $ machine_ baseAddr
 
