@@ -6,6 +6,7 @@ module CHIP80.CPU where
 
 import Z80
 import Z80.Utils
+import LFSR
 
 import CHIP80.Quirks
 
@@ -22,21 +23,20 @@ data Platform = Platform
     , spritePost :: Location
     , clearScreen :: Location
     , keyBuf :: Location
+    }
+
+data Locations = Locations
+    { ptr, regs, flag, stack, sp :: Location
     , timer :: Location
-    , waitForFrame :: Location
-    , lfsrDE :: Location
-    , rnd :: Location
+    , state, rnd, waitForFrame :: Location
+    , lfsr :: Location
     }
 
-data Vars = Vars
-    { ptr, regs, flag, stack, sp, state :: Location
-    }
-
-newFrame_ :: Platform -> Z80ASM
-newFrame_ Platform{..} = do
+newFrame_ :: Locations -> Platform -> Z80ASM
+newFrame_ Locations{..} Platform{..} = do
     ldVia A [waitForFrame] 0
     ld DE [rnd]
-    call lfsrDE
+    call lfsr
     ld [rnd] DE
     ld A [timer]
     dec A
@@ -44,32 +44,39 @@ newFrame_ Platform{..} = do
     ld [timer] A
     ret
 
-vars_ :: Z80 Vars
-vars_ = do
+allocate :: Z80 Locations
+allocate = do
     ptr <- labelled $ dw [0]
     regs <- labelled $ db $ replicate 16 0
     let flag = regs + 0xf
     stack <- labelled $ dw $ replicate 24 0
     sp <- labelled $ dw [stack]
-    state <- labelled $ db [0]
-    pure Vars{..}
 
-reset :: Vars -> Z80ASM
-reset Vars{..} = do
+    timer <- labelled $ db [0]
+
+    state <- labelled $ db [0]
+    rnd <- labelled $ dw [0xf00f]
+    waitForFrame <- labelled $ db [0]
+
+    lfsr <- labelled lfsr10
+    pure Locations{..}
+
+reset :: Locations -> Z80ASM
+reset Locations{..} = do
     ld A 0
     ld HL regs
     decLoopB 16 do
         ld [HL] A
         inc HL
-    forM_ [ptr, ptr + 1, state] \addr -> ld [addr] A
+    forM_ [ptr, ptr + 1, state, timer] \addr -> ld [addr] A
     ldVia A [sp] stackLo
     ldVia A [sp + 1] stackHi
   where
     (stackLo, stackHi) = wordBytes stack
 
 -- | `IY`: PC
-cpu_ :: Quirks Location -> Vars -> Platform -> Z80ASM
-cpu_ Quirks{..} vars@Vars{..} Platform{..} = mdo
+cpu_ :: Quirks Location -> Locations -> Platform -> Z80ASM
+cpu_ Quirks{..} Locations{..} Platform{..} = mdo
     let checkQuirk quirk = do
             push HL
             push BC
@@ -431,7 +438,7 @@ cpu_ Quirks{..} vars@Vars{..} Platform{..} = mdo
     opC <- labelled do -- Randomize vx imm
         call indexVXtoIX
         ld DE [rnd]
-        call lfsrDE
+        call lfsr
         ld [rnd] DE
 
         ld A E

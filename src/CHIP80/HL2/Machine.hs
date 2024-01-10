@@ -9,7 +9,6 @@ import CHIP80.Quirks
 import CHIP80.Font
 import CHIP80.HL2.Input
 import CHIP80.HL2.Video
-import LFSR
 import Z80.ZX0
 
 import Z80
@@ -172,7 +171,7 @@ run quirks baseAddr = mdo
     let vidBuf = baseAddr - 256
         keyBuf = vidBuf - 16
 
-    reset vars
+    reset locs
 
     ld IY $ baseAddr + 0x200
     loopForever do
@@ -185,19 +184,12 @@ run quirks baseAddr = mdo
             call scanKeys
             ret Z
             call newFrame
-
-    vars <- vars_
-
-    timer <- labelled $ db [0]
     lastFrame <- labelled $ db [0]
-    waitForFrame <- labelled $ db [0]
 
     let platform = Platform{ vidAddr = vidBuf, .. }
-    cpu <- labelled $ cpu_ quirks vars platform
-    newFrame <- labelled $ newFrame_ platform
-    rnd <- labelled $ dw [0xf00f]
-
-    lfsrDE <- labelled lfsr10
+    locs <- allocate
+    cpu <- labelled $ cpu_ quirks locs platform
+    newFrame <- labelled $ newFrame_ locs platform
 
     clearScreen <- labelled do
         ld HL $ videoStart + 4 + 40 * 3
