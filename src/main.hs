@@ -20,7 +20,7 @@ import System.Directory
 
 main :: IO ()
 main = do
-    emit "_build/chip80" =<< org 20000 <$> CHIP80.withGamesFrom "data/games"
+    emit "_build/chip80" =<< org 16700 <$> CHIP80.withGamesFrom "data/games"
 
 emit :: String -> ASMBlock -> IO ()
 emit name block = do

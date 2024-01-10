@@ -75,7 +75,7 @@ game images = mdo
         let space = do
                 ld A 0x20
                 rst 0x28
-        ld C $ fromIntegral . ord $ '1'
+        ld C $ fromIntegral . ord $ '0'
         ld IX titleTable
         decLoopB (fromIntegral $ length progs) do
             ld L [IX]
@@ -93,7 +93,7 @@ game images = mdo
 
         withLabel \inputLoop -> do
             rst 0x18
-            sub $ fromIntegral . ord $ '1'
+            sub $ fromIntegral . ord $ '0'
             jp C inputLoop
 
             cp (fromIntegral $ length progs + 1)
