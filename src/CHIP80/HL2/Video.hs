@@ -16,11 +16,29 @@ import Data.Bits
 import Data.Char
 import qualified Data.ByteString as BS
 
-pictureWidth :: Word8
+pictureWidth :: Num a => a
 pictureWidth = 64
 
-pictureHeight :: Word8
+pictureHeight :: Num a => a
 pictureHeight = 32
+
+windowWidth :: Word16
+windowWidth = pictureWidth `div` 2
+
+windowHeight :: Word16
+windowHeight = pictureHeight `div` 2
+
+windowPadH :: Word16
+windowPadH = (numCols - windowWidth) `div` 2
+
+windowPadV :: Word16
+windowPadV = 3
+
+windowStart :: Word16
+windowStart = videoStart + windowPadH + windowPadV * numCols
+
+windowEnd :: Word16
+windowEnd = windowStart + (windowHeight - 1) * numCols + windowPadH + windowWidth
 
 -- | Pre: `A` is X coordinate, `C` is Y coordinate, and `B` is sprite height
 drawSprite :: Location -> Z80ASM
@@ -45,7 +63,7 @@ drawSprite vidBuf = mdo
     add IX DE
 
     -- Calculate starting target byte into HL
-    ld HL $ videoStart + 4 + 40 * 3
+    ld HL windowStart
 
     -- Add Y/2 * 40 to HL
     replicateM_ 4 $ srl C
@@ -119,10 +137,14 @@ drawSprite vidBuf = mdo
             add IY DE
 
             -- Are we still in bounds?
-            ld A H
-            cp 0xc3
+            Z80.or A
+            push DE
+            ld DE windowEnd
+            sbc HL DE
+            add HL DE
             unlessFlag NC do
                 ldVia A [HL] [IY]
+            pop DE
             inc HL
         pop BC
         inc IX
