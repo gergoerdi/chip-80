@@ -180,7 +180,7 @@ run quirks baseAddr = mdo
         ld A [0x403f]
         cp [HL]
         unlessFlag Z do
-            ld [lastFrame] A
+            ld [HL] A
             call scanKeys
             ret Z
             call newFrame

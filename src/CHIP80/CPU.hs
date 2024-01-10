@@ -39,8 +39,9 @@ newFrame_ Locations{..} Platform{..} = do
     call lfsr
     ld [rnd] DE
     ld A [timer]
+    Z80.and A
+    ret Z
     dec A
-    ret C
     ld [timer] A
     ret
 
