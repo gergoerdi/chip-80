@@ -149,6 +149,7 @@ game images logo = mdo
             push BC
             pop IY
 
+            call drawUI
             call machine
 
     -- TODO: share this with rest of the code
@@ -176,6 +177,7 @@ game images logo = mdo
     let (logoWidth, logoHeight, logoBytes) = encodeFromPng logo
     logoData <- labelled $ db logoBytes
 
+    drawUI <- labelled drawUI_
     machine <- labelled $ machine_ baseAddr
 
     progs <- forM images \(title, Quirks{..}, image) -> do
@@ -192,4 +194,86 @@ game images logo = mdo
     titleTable <- labelled $ dw [ title | (title, _, _) <- progs ]
     quirksTable <- labelled $ dw [ quirks | (_, quirks, _) <- progs ]
     progTable <- labelled $ dw [ prog | (_, _, prog) <- progs ]
+    pure ()
+
+drawUI_ :: Z80ASM
+drawUI_ = mdo
+    -- Clear screen
+    ld HL videoStart
+    withLabel \loop -> do
+        ld [HL] 0x20
+        inc HL
+        ld A H
+        cp 0xc4
+        jp NZ loop
+
+    ld HL $ videoStart + 4 + (3 - 1) * 40 - 1
+    ld [HL] 0x6e
+    inc HL
+    ld A 0x96
+    decLoopB 32 do
+        ld [HL] A
+        inc HL
+    ld [HL] 0x6d
+
+    ld HL $ videoStart + 4 + (3 + 16) * 40 - 1
+    ld [HL] 0x6c
+    inc HL
+    ld A 0x95
+    decLoopB 32 do
+        ld [HL] A
+        inc HL
+    ld [HL] 0x6b
+
+    ld HL $ videoStart + 4 + 3 * 40 - 1
+    decLoopB 16 do
+        ld [HL] 0xeb
+        ld DE 33
+        add HL DE
+        ld [HL] 0xea
+        ld DE 7
+        add HL DE
+
+    -- Draw main UI
+    ld HL $ videoStart + 40
+    ld DE banner
+    skippable \end -> loopForever do
+        ld A [DE]
+        Z80.and A
+        jp Z end
+        ld [HL] A
+        inc HL
+        inc DE
+    ld HL $ videoStart + (3 + 16 + 1 + 1) * 40
+    forM_ keyss \keys -> do
+        ld DE keys
+        skippable \end -> loopForever do
+            ld A [DE]
+            Z80.and A
+            jp Z end
+            ld [HL] A
+            inc HL
+            inc DE
+        ld DE (40 - 10) -- 4 * 4 + 1)
+        add HL DE
+    ld HL $ videoStart + (3 + 16 + 1 + 1) * 40 + 20
+    ld DE reset
+    skippable \end -> loopForever do
+        ld A [DE]
+        Z80.and A
+        jp Z end
+        ld [HL] A
+        inc HL
+        inc DE
+    ret
+    banner <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $ invert "   CHIP-80     https://gergo.erdi.hu/   "
+    keyss <- mapM (labelled . db . (++ [0]) . map (fromIntegral . ord . toUpper)) $
+      let rows = [ ("123C", "1234")
+                 , ("456D", "QWER")
+                 , ("789E", "ASDF")
+                 , ("A0BF", "ZXCV")
+                 ]
+      in [ sym ++ "  " ++ invert key | (sym, key) <- rows ]
+    reset <- labelled . db . (++ [0]) . map (fromIntegral . ord . toUpper) $
+        invert "RUN/BRK" <> ": Change game"
     pure ()

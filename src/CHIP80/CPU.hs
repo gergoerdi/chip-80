@@ -9,6 +9,7 @@ import Z80.Utils
 import LFSR
 
 import CHIP80.Quirks
+import CHIP80.Font
 
 import Data.Word
 import Control.Monad
@@ -22,7 +23,8 @@ data Platform = Platform
     }
 
 data CPU = CPU
-    { resetCPU :: Location
+    { init :: Location
+    , resetCPU :: Location
     , newFrame :: Location
     , stepCPU :: Location
     , vidBuf, keyBuf :: Location
@@ -30,7 +32,7 @@ data CPU = CPU
 
 cpu :: Quirks Location -> Platform -> Z80 CPU
 cpu Quirks{..} Platform{..} = mdo
-    let vidBuf = baseAddr + 0x080
+    let vidBuf = baseAddr + 0x080 -- Leave space for the hex font
         keyBuf = vidBuf + 0x100
         ptr = keyBuf + 16
         regs = ptr + 2
@@ -46,6 +48,25 @@ cpu Quirks{..} Platform{..} = mdo
 
     rnd <- labelled $ dw [0xf00f]
     lfsr <- labelled lfsr10
+
+    hex <- labelled $ db font
+    init <- labelled do
+        -- Zero out CHIP-8 RAM
+        ld DE baseAddr
+        ld A 0
+        decLoopB 16 do
+            push BC
+            decLoopB 256 do
+                ld [DE] A
+                inc DE
+            pop BC
+
+        -- Load hex font into baseAddr..+0x080
+        ld DE baseAddr
+        ld HL hex
+        ld BC $ 16 * 8
+        ldir
+        ret
 
     resetCPU <- labelled do
         ld A 0
@@ -65,6 +86,8 @@ cpu Quirks{..} Platform{..} = mdo
         let (stackLo, stackHi) = wordBytes stack
         ldVia A [sp] stackLo
         ldVia A [sp + 1] stackHi
+
+        ld IY $ baseAddr + 0x200
         ret
 
     newFrame <- labelled do
