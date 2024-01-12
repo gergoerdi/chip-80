@@ -1,5 +1,5 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns #-}
-module CHIP80.HL2.Input (scanKeys_) where
+module Target.HomeLab.HL2.Input (scanKeys_) where
 
 import Z80
 import Z80.Utils

@@ -22,10 +22,11 @@ dependencies:
 source-dirs:
   - src
 
+c-sources:
+  - import/ZX0/src/compress.c
+  - import/ZX0/src/optimize.c
+  - import/ZX0/src/memory.c
+
 executables:
-  homelab-games:
+  chip80-homelab2:
     main: main.hs
-    c-sources:
-      - import/ZX0/src/compress.c
-      - import/ZX0/src/optimize.c
-      - import/ZX0/src/memory.c

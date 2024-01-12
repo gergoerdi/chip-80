@@ -1,7 +1,7 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE FlexibleContexts #-}
-module CHIP80.HL2.Video where
+module Target.HomeLab.HL2.Video where
 
 import HL2
 import CHIP80.CPU

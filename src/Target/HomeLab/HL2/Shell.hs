@@ -1,14 +1,14 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns, LambdaCase #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE FlexibleContexts #-}
-module CHIP80.Main (withGamesFrom) where
+module Target.HomeLab.HL2.Shell (withGamesFrom) where
 
 import HL2
 import CHIP80.Quirks
-import CHIP80.HL2.Machine
-import CHIP80.HL2.Video (encodeFromPng)
-import Z80.ZX0
-import Z80.ZX0.Compress
+import Target.HomeLab.HL2.Machine
+import Target.HomeLab.HL2.Video (encodeFromPng)
+import ZX0
+import ZX0.Compress
 
 import Z80
 import Z80.Utils
@@ -63,7 +63,7 @@ game images logo = mdo
     ldVia A [0x4003] 0x03
 
     let baseAddr = 0x7000
-    ld SP $ baseAddr - (256 + 16) - 1
+    ld SP $ baseAddr - 1
 
     loopForever do
         -- Clear screen

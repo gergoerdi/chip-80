@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE BlockArguments #-}
-module Z80.ZX0.Compress where
+module ZX0.Compress where
 
 import Foreign.Ptr
 import Foreign.C.Types

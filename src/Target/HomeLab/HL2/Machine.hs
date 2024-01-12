@@ -1,15 +1,15 @@
 {-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE FlexibleContexts #-}
-module CHIP80.HL2.Machine (machine_) where
+module Target.HomeLab.HL2.Machine (machine_) where
 
 import HL2
 import CHIP80.CPU
 import CHIP80.Quirks
 import CHIP80.Font
-import CHIP80.HL2.Input
-import CHIP80.HL2.Video
-import Z80.ZX0
+import Target.HomeLab.HL2.Input
+import Target.HomeLab.HL2.Video
+import ZX0
 
 import Z80
 import Z80.Utils
@@ -168,14 +168,11 @@ setup_ baseAddr = mdo
 
 run :: Quirks Location -> Location -> Z80ASM
 run quirks baseAddr = mdo
-    let vidBuf = baseAddr - 256
-        keyBuf = vidBuf - 16
-
-    reset locs platform
+    call resetCPU
 
     ld IY $ baseAddr + 0x200
     loopForever do
-        call cpu
+        call stepCPU
         ld HL lastFrame
         ld A [0x403f]
         cp [HL]
@@ -186,10 +183,8 @@ run quirks baseAddr = mdo
             call newFrame
     lastFrame <- labelled $ db [0]
 
-    let platform = Platform{ vidAddr = vidBuf, .. }
-    locs <- allocate
-    cpu <- labelled $ cpu_ quirks locs platform
-    newFrame <- labelled $ newFrame_ locs platform
+    let platform = Platform{..}
+    CPU{..} <- cpu quirks platform
 
     clearScreen <- labelled do
         ld HL $ videoStart + 4 + 40 * 3
