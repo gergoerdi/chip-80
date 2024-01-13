@@ -36,6 +36,7 @@ withGamesFrom dir = do
     let file = "1-chip-logo"
     let file = "2-ibm-logo"
     let file = "hidden"
+    -- let file = "6-keypad"
     (image, _) <- compressForward =<< BS.readFile (dir </> file <.> "ch8")
     -- let quirks = Quirks{ shiftVY = False, resetVF = False, incrementPtr = False, videoWait = False, clipSprites = False }
 

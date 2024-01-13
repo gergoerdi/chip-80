@@ -2,7 +2,7 @@ module Target.TVC.Machine (machine_) where
 
 import Target.TVC.Defs
 import CHIP80.CPU
--- import Target.TVC.Input
+import Target.TVC.Input
 import Target.TVC.Video
 import ZX0
 
@@ -48,7 +48,7 @@ machine_ baseAddr = mdo
         -- ld A 0b00_10_00_00
         -- out [0x00] A
 
-        -- scanKeyboard kbdBuf
+        call scanKeys
         -- blitPicture frameBuf
         call newFrame
 
@@ -96,14 +96,15 @@ machine_ baseAddr = mdo
 
     frameBuf <- labelled $ db $ replicate (64 * 32) 0
 
-    -- TODO: Scan the keyboard and write its state to the 16 bytes starting at `keyBuf`
-    scanKeys <- labelled do
-        ld A 0
-        ld DE keyBuf
-        decLoopB 16 do
-            ld [DE] A
-            inc DE
-        ret
+    scanKeys <- labelled $ scanKeys_ keyBuf
+
+    -- scanKeys <- labelled do
+    --     ld A 0
+    --     ld DE keyBuf
+    --     decLoopB 16 do
+    --         ld [DE] A
+    --         inc DE
+    --     ret
     pure ()
   where
     setupLineInt y = do
