@@ -1,6 +1,6 @@
 module Target.HomeLab.HL2.Machine (machine_) where
 
-import HL2
+import Target.HomeLab.HL2.Defs
 import CHIP80.CPU
 import CHIP80.Quirks
 import Target.HomeLab.HL2.Input

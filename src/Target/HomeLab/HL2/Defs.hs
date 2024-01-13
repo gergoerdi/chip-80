@@ -1,4 +1,4 @@
-module HL2 where
+module Target.HomeLab.HL2.Defs where
 
 import Z80
 import Z80.Utils

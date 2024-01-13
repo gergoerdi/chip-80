@@ -1,6 +1,6 @@
 module Target.HomeLab.HL2.Video where
 
-import HL2
+import Target.HomeLab.HL2.Defs
 import CHIP80.CPU
 import CHIP80.Font
 

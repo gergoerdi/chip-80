@@ -1,6 +1,6 @@
 module Target.HomeLab.HL2.Shell (withGamesFrom) where
 
-import HL2
+import Target.HomeLab.HL2.Defs
 import CHIP80.Quirks
 import Target.HomeLab.HL2.Machine
 import Target.HomeLab.HL2.Video (encodeFromPng)
