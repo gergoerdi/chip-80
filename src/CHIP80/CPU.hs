@@ -78,7 +78,8 @@ cpu Platform{..} = mdo
         ldVia A [incrementPtr] [IX + 2]
         ldVia A [videoWait] [IX + 3]
         ldVia A [clipSprites] [IX + 4]
-        ret
+
+        jp clearScreen
 
     resetCPU <- labelled do
         -- Reset CPU registers
