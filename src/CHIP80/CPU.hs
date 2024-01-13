@@ -19,15 +19,15 @@ data Platform = Platform
     }
 
 data CPU = CPU
-    { init :: Location
+    { init :: Location -- ^ Pre: `IX` contains address of quirks settings
     , resetCPU :: Location
     , newFrame :: Location
     , stepCPU :: Location
     , vidBuf, keyBuf :: Location
     }
 
-cpu :: Quirks Location -> Platform -> Z80 CPU
-cpu Quirks{..} Platform{..} = mdo
+cpu :: Platform -> Z80 CPU
+cpu Platform{..} = mdo
     let vidBuf = baseAddr + 0x080 -- Leave space for the hex font
         keyBuf = vidBuf + 0x100
         ptr = keyBuf + 16
@@ -42,10 +42,19 @@ cpu Quirks{..} Platform{..} = mdo
     -- All this needs to fit inside the first 0x200 bytes from `baseAddr`
     unless (waitForFrame < baseAddr + 0x200) $ error "CHIP-8 CPU state doesn't fit"
 
+    quirks@Quirks{..} <- do
+        shiftVY <- labelled $ db [1]
+        resetVF <- labelled $ db [1]
+        incrementPtr <- labelled $ db [1]
+        videoWait <- labelled $ db [1]
+        clipSprites <- labelled $ db [1]
+        pure Quirks{..}
+
     rnd <- labelled $ dw [0xf00f]
     lfsr <- labelled lfsr10
 
     hex <- labelled $ db font
+
     init <- labelled do
         -- Zero out CHIP-8 RAM
         ld DE baseAddr
@@ -62,9 +71,17 @@ cpu Quirks{..} Platform{..} = mdo
         ld HL hex
         ld BC $ 16 * 8
         ldir
+
+        -- Load quirks
+        ldVia A [shiftVY] [IX + 0]
+        ldVia A [resetVF] [IX + 1]
+        ldVia A [incrementPtr] [IX + 2]
+        ldVia A [videoWait] [IX + 3]
+        ldVia A [clipSprites] [IX + 4]
         ret
 
     resetCPU <- labelled do
+        -- Reset CPU registers
         ld A 0
 
         ld HL vidBuf

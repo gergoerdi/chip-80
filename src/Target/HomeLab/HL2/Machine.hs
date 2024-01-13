@@ -2,7 +2,6 @@ module Target.HomeLab.HL2.Machine (machine_) where
 
 import Target.HomeLab.HL2.Defs
 import CHIP80.CPU
-import CHIP80.Quirks
 import Target.HomeLab.HL2.Input
 import Target.HomeLab.HL2.Video
 import ZX0
@@ -14,12 +13,6 @@ import Z80.Utils
 -- | Pre: `IY` contains address of compressed program
 machine_ :: Location -> Z80ASM
 machine_ baseAddr = mdo
-    ldVia A [shiftVY] [IX + 0]
-    ldVia A [resetVF] [IX + 1]
-    ldVia A [incrementPtr] [IX + 2]
-    ldVia A [videoWait] [IX + 3]
-    ldVia A [clipSprites] [IX + 4]
-
     call init
 
     -- Uncompress program into CHIP-8 RAM
@@ -28,9 +21,8 @@ machine_ baseAddr = mdo
     ld DE $ baseAddr + 0x200
     call uncompress
 
-    call resetCPU
-
     -- Run CPU...
+    call resetCPU
     loopForever do
         call stepCPU
         ld HL lastFrame
@@ -44,17 +36,9 @@ machine_ baseAddr = mdo
     lastFrame <- labelled $ db [0]
 
     uncompress <- labelled standardFwd
-    ~quirks@Quirks{..} <- do
-        shiftVY <- labelled $ db [1]
-        resetVF <- labelled $ db [1]
-        incrementPtr <- labelled $ db [1]
-        videoWait <- labelled $ db [1]
-        clipSprites <- labelled $ db [1]
-        pure Quirks{..}
-
 
     let platform = Platform{..}
-    CPU{..} <- cpu quirks platform
+    CPU{..} <- cpu platform
 
     clearScreen <- labelled do
         ld HL $ videoStart + 4 + 40 * 3
