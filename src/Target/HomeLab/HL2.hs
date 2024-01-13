@@ -10,12 +10,11 @@ import Data.String (fromString)
 import System.FilePath
 import System.Directory
 
-main :: IO ()
-main = do
-    emit "_build/chip80" =<< org 16700 <$> withGamesFrom "data/games"
+emit :: IO ()
+emit = do
+    prog <- org 16700 <$> withGamesFrom "data/games"
+    let name = "_build/chip80-hl2"
 
-emit :: String -> ASMBlock -> IO ()
-emit name block = do
     createDirectoryIfMissing True (takeDirectory name)
-    BS.writeFile (name <.> "obj") $ asmData block
-    BS.writeFile (name <.> "htp") $ htp (fromString $ takeBaseName name) block
+    BS.writeFile (name <.> "obj") $ asmData prog
+    BS.writeFile (name <.> "htp") $ htp (fromString $ takeBaseName name) prog
