@@ -1,4 +1,3 @@
-{-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns #-}
 module Target.HomeLab.HL2.Input (scanKeys_) where
 
 import Z80

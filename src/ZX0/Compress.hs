@@ -1,5 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE BlockArguments #-}
 module ZX0.Compress where
 
 import Foreign.Ptr

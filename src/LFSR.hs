@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 module LFSR where
 
 import Z80

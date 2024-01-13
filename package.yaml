@@ -19,6 +19,15 @@ dependencies:
   - text
   - JuicyPixels
 
+default-extensions:
+  - BinaryLiterals
+  - NumericUnderscores
+  - BlockArguments
+  - RecursiveDo
+  - NamedFieldPuns
+  - RecordWildCards
+  - LambdaCase
+
 source-dirs:
   - src
 

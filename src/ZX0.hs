@@ -1,4 +1,3 @@
-{-# LANGUAGE RecursiveDo, BlockArguments #-}
 module ZX0 where
 
 -- Port of https://github.com/einar-saukas/ZX0/ for easy inclusion in

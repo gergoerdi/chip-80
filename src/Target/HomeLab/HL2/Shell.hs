@@ -1,6 +1,3 @@
-{-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns, LambdaCase #-}
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE FlexibleContexts #-}
 module Target.HomeLab.HL2.Shell (withGamesFrom) where
 
 import HL2

@@ -1,7 +1,3 @@
-{-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards #-}
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
 module CHIP80.CPU where
 
 import Z80

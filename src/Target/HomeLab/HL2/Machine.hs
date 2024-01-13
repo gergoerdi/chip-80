@@ -1,6 +1,3 @@
-{-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals, RecordWildCards, NamedFieldPuns #-}
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE FlexibleContexts #-}
 module Target.HomeLab.HL2.Machine (machine_) where
 
 import HL2

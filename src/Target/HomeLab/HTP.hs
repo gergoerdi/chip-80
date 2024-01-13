@@ -1,5 +1,3 @@
-{-# LANGUAGE NumericUnderscores, BlockArguments, BinaryLiterals #-}
-{-# LANGUAGE RecursiveDo #-}
 module Target.HomeLab.HTP where
 
 import Z80
