@@ -125,10 +125,10 @@ machine_ baseAddr = mdo
         ret
 
     spritePost <- labelled do
+        pageVideo
         ldVia A B [spriteH]
         ldVia A C [spriteY]
         ld A [spriteX]
-        pageVideo
         -- drawPicture 1 vidBuf frameBuf
         drawPicture 4 vidBuf windowStart
         pageRAM

@@ -70,7 +70,8 @@ blitPicture scaleY frameBuf = do
 -- | Pre: `A` is sprite X coordinate, `C` is sprite Y coordinate, `B` is sprite height
 drawPicture :: Int -> Location -> Location -> Z80ASM
 drawPicture scaleY vidBuf frameBuf = do
-    -- Calculate 8 * C into HL
+    -- Calculate vidBuf + 8 * C + A / 8 into HL
+    push AF
     push BC
     ld HL vidBuf
     ld DE 8
@@ -80,9 +81,14 @@ drawPicture scaleY vidBuf frameBuf = do
         jp Z end
         sla E
         rl D
+    replicateM_ 3 $ srl A
+    ld D 0
+    ld E A
+    add HL DE
     pop BC
+    pop AF
 
-    -- Calculate 64 * C into IX
+    -- Calculate frameBuf + 64 * C + A / 8 * 8 into IX
     ld IX frameBuf
     ld DE $ 64 * fromIntegral scaleY
     skippable \end -> loopForever do
@@ -91,10 +97,14 @@ drawPicture scaleY vidBuf frameBuf = do
         jp Z end
         sla E
         rl D
+    Z80.and 0b1111_1000
+    ld D 0
+    ld E A
+    add IX DE
 
     withLabel \drawRow -> do
         push BC
-        decLoopB 8 do
+        decLoopB 2 do
             ld A [HL]
             inc HL
 
@@ -108,9 +118,10 @@ drawPicture scaleY vidBuf frameBuf = do
                 inc IX
             ld B C
 
-        when (scaleY > 1) do
-            ld DE (64 * (fromIntegral scaleY - 1))
-            add IX DE
+        ld DE 6
+        add HL DE
+        ld DE (64 * (fromIntegral scaleY - 1) + (64 - 2 * 8))
+        add IX DE
         pop BC
         djnz drawRow
 
