@@ -26,6 +26,12 @@ data CPU = CPU
     , vidBuf, keyBuf :: Location
     }
 
+type State = Word8
+stateRUN, stateWAIT_PRESS, stateWAIT_RELEASE :: State
+stateRUN = 0
+stateWAIT_PRESS = 1
+stateWAIT_RELEASE = 2
+
 cpu :: Platform -> Z80 CPU
 cpu Platform{..} = mdo
     let vidBuf = baseAddr + 0x080 -- Leave space for the hex font
@@ -142,9 +148,9 @@ cpu Platform{..} = mdo
                 unlessFlag Z body
 
         ld A [state]
-        cp 1
+        cp stateWAIT_PRESS
         jp Z waitPress
-        cp 2
+        cp stateWAIT_RELEASE
         jp Z waitRelease
         jp step
 
@@ -153,24 +159,18 @@ cpu Platform{..} = mdo
 
         waitPress <- labelled do
             -- Wait for a fresh keypress
-            ld HL keyBuf
-            ld DE prevKeyBuf
-            ld B 0 -- This will be the key found
+            ld HL $ keyBuf + 16 -- We will be scanning downwards, because of `decLoopB`
+            ld DE $ prevKeyBuf + 16
             skippable \pressed -> do
-                withLabel \loop -> do
+                decLoopB 16 do -- `B` will be the key found
                     -- Check for a key that wasn't pressed before, but is pressed now.
+                    dec DE
                     ld A [DE]
-                    inc DE
                     cpl
+                    dec HL
                     ld C [HL]
-                    inc HL
                     Z80.and C
                     jp NZ pressed
-
-                    inc B
-                    ld A B
-                    cp 16
-                    jp NZ loop
 
                 -- Store old keyboard state
                 ld DE prevKeyBuf
@@ -180,18 +180,21 @@ cpu Platform{..} = mdo
 
                 ret
 
+            dec B
+            -- At this point, we have the freshly pressed key's index in `B`
+
             -- Write result
             ld IX [keyAddr]
             ld [IX] B
 
-            -- Wait for the found key to be released
+            -- Start waiting for the found key to be released
             ld C B
             ld B 0
             ld IX keyBuf
             add IX BC
             ld [keyAddr] IX
 
-            ldVia A [state] 2
+            ldVia A [state] stateWAIT_RELEASE
             ret
 
         waitRelease <- labelled do
@@ -200,7 +203,7 @@ cpu Platform{..} = mdo
             Z80.and A
             ret NZ
 
-            ldVia A [state] 0
+            ldVia A [state] stateRUN
             ret
 
         step <- label
@@ -767,14 +770,13 @@ cpu Platform{..} = mdo
                 ld [keyAddr] IX
 
                 -- Initialize `prevKeyBuf`
+                ld HL keyBuf
                 ld DE prevKeyBuf
-                ld A 0xff
-                decLoopB 16 do
-                    ld [DE] A
-                    inc DE
+                ld BC 16
+                ldir
 
                 -- Go to state waitPress
-                ldVia A [state] 1
+                ldVia A [state] stateWAIT_PRESS
                 ret
 
             storeRegs <- labelled do -- StoreRegs VX
