@@ -18,10 +18,22 @@ setVideoMode = do
     Z80.or  0b0000_0010 -- Graphics mode 16
     out [0x06] A
 
-clearPicture :: Word8 -> Z80ASM
-clearPicture scaleY = do
+clearFullScreen :: Z80ASM
+clearFullScreen = do
     pageVideo
     ld HL videoStart
+    ld A 0
+    decLoopB 240 do
+        ld C B
+        decLoopB 64 do
+            ld [HL] A
+            inc HL
+        ld B C
+    pageRAM
+
+clearPicture :: Word8 -> Location -> Z80ASM
+clearPicture scaleY frameBuf = do
+    ld HL frameBuf
     nTimes scaleY do
         decLoopB 8 do
             ld C B
@@ -29,7 +41,6 @@ clearPicture scaleY = do
                 ld [HL] 0
                 inc HL
             ld B C
-    pageRAM
   where
     nTimes 0 act = pure ()
     nTimes 1 act = act

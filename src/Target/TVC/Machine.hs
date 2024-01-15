@@ -9,6 +9,9 @@ import ZX0
 import Z80
 import Z80.Utils
 
+windowStart :: Location
+windowStart = (videoStart + 32 * 64)
+
 -- | Pre: `IX` contains address of quirks settings
 -- | Pre: `IY` contains address of compressed program
 machine_ :: Location -> Z80ASM
@@ -20,6 +23,8 @@ machine_ baseAddr = mdo
     pop HL
     ld DE $ baseAddr + 0x200
     call uncompress
+
+    clearFullScreen
 
     -- Set up interrupt handler to redraw screen
     di
@@ -92,7 +97,9 @@ machine_ baseAddr = mdo
     CPU{..} <- cpu platform
 
     clearScreen <- labelled do
-        clearPicture 4
+        pageVideo
+        clearPicture 4 windowStart
+        pageRAM
         ret
 
     spriteX <- labelled $ db [0]
@@ -113,7 +120,7 @@ machine_ baseAddr = mdo
         ld A [spriteX]
         pageVideo
         -- drawPicture 1 vidBuf frameBuf
-        drawPicture 4 vidBuf videoStart
+        drawPicture 4 vidBuf windowStart
         pageRAM
         ret
 
