@@ -1,7 +1,7 @@
 module Target.HomeLab.HL2 where
 
 import Target.HomeLab.HL2.Shell
-import Target.HomeLab.HTP
+import Target.HomeLab.HL2.HTP
 
 import Z80
 
@@ -17,4 +17,4 @@ emit = do
 
     createDirectoryIfMissing True (takeDirectory name)
     BS.writeFile (name <.> "obj") $ asmData prog
-    BS.writeFile (name <.> "htp") $ htp (fromString $ takeBaseName name) prog
+    BS.writeFile (name <.> "htp") $ htpWithAutoStart (fromString $ takeBaseName name) prog
