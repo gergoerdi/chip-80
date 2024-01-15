@@ -37,8 +37,15 @@ withGamesFrom dir = do
     let file = "2-ibm-logo"
     let file = "hidden"
     -- let file = "6-keypad"
+    let file = "slipperyslope"
     (image, _) <- compressForward =<< BS.readFile (dir </> file <.> "ch8")
-    -- let quirks = Quirks{ shiftVY = False, resetVF = False, incrementPtr = False, videoWait = False, clipSprites = False }
+    let quirks_ = Quirks
+          { shiftVY = True
+          , resetVF = True
+          , incrementPtr = True
+          , videoWait = False
+          , clipSprites = True
+          }
 
     pure $ mdo
         ld SP 0x16ad
@@ -68,6 +75,12 @@ withGamesFrom dir = do
 
         logo <- labelled $ db logoBytes
         prog <- labelled $ db image
-        quirks <- labelled $ db [0, 0, 0, 0, 0]
+        quirks <- labelled $ db $ let quirk flag = if flag quirks_ then 0x01 else 0x00 in
+            [ quirk shiftVY
+            , quirk resetVF
+            , quirk incrementPtr
+            , quirk videoWait
+            , quirk clipSprites
+            ]
         machine <- labelled $ machine_ 0xe000
         pure ()
