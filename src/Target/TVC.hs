@@ -13,7 +13,7 @@ import System.Directory
 emit :: IO ()
 emit = do
     prog <- org 0x1a00 <$> withGamesFrom "data/games"
-    let name = "_build/c8tvc"
+    let name = "_build/chip80-tvc"
 
     createDirectoryIfMissing True (takeDirectory name)
     BS.writeFile (name <.> "obj") $ asmData prog
