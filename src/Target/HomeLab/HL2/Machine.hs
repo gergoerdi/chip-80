@@ -38,6 +38,8 @@ machine_ baseAddr = mdo
     uncompress <- labelled standardFwd
 
     let platform = Platform{..}
+          where
+            readKeys = Nothing
     CPU{..} <- cpu platform
 
     clearScreen <- labelled do

@@ -10,12 +10,14 @@ import CHIP80.Font
 import Data.Word
 import Control.Monad
 import Data.Bits
+import Data.Foldable
 
 data Platform = Platform
     { baseAddr :: Location
     , spritePre :: Location
     , spritePost :: Location
     , clearScreen :: Location
+    , readKeys :: Maybe Location
     }
 
 data CPU = CPU
@@ -159,6 +161,7 @@ cpu Platform{..} = mdo
 
         waitPress <- labelled do
             -- Wait for a fresh keypress
+            traverse_ call readKeys
             ld HL $ keyBuf + 16 -- We will be scanning downwards, because of `decLoopB`
             ld DE $ prevKeyBuf + 16
             skippable \pressed -> do
@@ -198,6 +201,7 @@ cpu Platform{..} = mdo
             ret
 
         waitRelease <- labelled do
+            traverse_ call readKeys
             ld IX [keyAddr]
             ld A [IX]
             Z80.and A
@@ -637,6 +641,7 @@ cpu Platform{..} = mdo
         opE <- labelled mdo -- SkipKey vx
             call loadVXtoA
 
+            traverse_ call readKeys
             ld D 0
             ld E A
             ld IX keyBuf
@@ -770,6 +775,7 @@ cpu Platform{..} = mdo
                 ld [keyAddr] IX
 
                 -- Initialize `prevKeyBuf`
+                traverse_ call readKeys
                 ld HL keyBuf
                 ld DE prevKeyBuf
                 ld BC 16

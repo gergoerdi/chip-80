@@ -35,6 +35,19 @@ machine_ baseAddr = mdo
     -- Run CPU
     call resetCPU
     loopForever do
+        call stepCPU
+        -- TODO: `ret` if RUN/BRK is pressed
+
+    uncompress <- labelled standardFwd
+
+    keyBuf1 <- labelled $ db $ replicate 16 0
+    keyBuf2 <- labelled $ db $ replicate 16 0
+    currentKeybuf <- labelled $ db [0]
+    readKeys <- Just <$> labelled do
+        push AF
+        push BC
+        push DE
+        push HL
         ld DE keyBuf
         ld BC 16
         ld HL keyBuf2
@@ -44,15 +57,12 @@ machine_ baseAddr = mdo
             jp NZ useKeyBuf2
             ld HL keyBuf1
         ldir
+        pop HL
+        pop DE
+        pop BC
+        pop AF
+        ret
 
-        call stepCPU
-        -- TODO: `ret` if RUN/BRK is pressed
-
-    uncompress <- labelled standardFwd
-
-    keyBuf1 <- labelled $ db $ replicate 16 0
-    keyBuf2 <- labelled $ db $ replicate 16 0
-    currentKeybuf <- labelled $ db [0]
 
     intHandler <- labelled do
         push AF
