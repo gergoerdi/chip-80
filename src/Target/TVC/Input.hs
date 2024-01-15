@@ -10,10 +10,10 @@ import Data.Bits
 import Data.List (sortBy, groupBy)
 import Data.Function (on)
 
--- | Scan the keyboard and write its state to the 16 bytes starting at `keyBuf`
+-- | Scan the keyboard and write its state to the 16 bytes starting at `HL`
 --   Post: Z flag iff the run/brk key was pressed
-scanKeys_ :: Location -> Z80ASM
-scanKeys_ keyBuf = do
+scanKeys_ :: Z80ASM
+scanKeys_ = do
     ld A [0x0b11]
     Z80.and 0xf0
     ld D A
@@ -27,10 +27,13 @@ scanKeys_ keyBuf = do
         in_ A [0x58]
 
         forM_ keys \(_, (i, value)) -> do
-            ld HL $ keyBuf + value
+            ld DE (fromIntegral value)
+            push HL
+            add HL DE
             ld [HL] 0x00
             Z80.bit i A
             unlessFlag NZ $ dec [HL]
+            pop HL
 
     -- TODO: check DEL for reset, set Z if pressed
     ret

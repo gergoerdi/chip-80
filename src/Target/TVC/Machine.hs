@@ -30,10 +30,24 @@ machine_ baseAddr = mdo
     -- Run CPU
     call resetCPU
     loopForever do
+        ld DE keyBuf
+        ld BC 16
+        ld HL keyBuf2
+        skippable \useKeyBuf2 -> do
+            ld A [currentKeybuf]
+            cp 0xff
+            jp NZ useKeyBuf2
+            ld HL keyBuf1
+        ldir
+
         call stepCPU
         -- TODO: `ret` if RUN/BRK is pressed
 
     uncompress <- labelled standardFwd
+
+    keyBuf1 <- labelled $ db $ replicate 16 0
+    keyBuf2 <- labelled $ db $ replicate 16 0
+    currentKeybuf <- labelled $ db [0]
 
     intHandler <- labelled do
         push AF
@@ -47,6 +61,15 @@ machine_ baseAddr = mdo
         -- -- Set border color to dark green
         -- ld A 0b00_10_00_00
         -- out [0x00] A
+
+        ld HL keyBuf1
+        skippable \useKeyBuf1 -> do
+            ld A [currentKeybuf]
+            cp 0xff
+            jp NZ useKeyBuf1
+            ld HL keyBuf2
+        cpl
+        ld [currentKeybuf] A
 
         call scanKeys
         -- blitPicture frameBuf
@@ -96,7 +119,7 @@ machine_ baseAddr = mdo
 
     frameBuf <- labelled $ db $ replicate (64 * 32) 0
 
-    scanKeys <- labelled $ scanKeys_ keyBuf
+    scanKeys <- labelled scanKeys_
 
     -- scanKeys <- labelled do
     --     ld A 0
