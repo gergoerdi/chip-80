@@ -3,17 +3,17 @@ hidden:
   resetVF: off
   incrementPtr: off
 
-# snek:
-#   title: Snek
+snek:
+  title: Snek
 
 ghostEscape:
   title: Ghost Escape
   videoWait: off
   
-# tic-tac-toe:
-#   shiftVY: off
-#   resetVF: off
-#   incrementPtr: off
+tic-tac-toe:
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
 
 invaders:
   title: Space Invaders
@@ -21,9 +21,9 @@ invaders:
   resetVF: off
   incrementPtr: off
 
-# superpong:
-#   title: Super PONG
-#   videoWait: off
+superpong:
+  title: Super PONG
+  videoWait: off
 
 slipperyslope:
   title: Slippery Slope
@@ -50,11 +50,11 @@ br8kout:
   resetVF: off
   incrementPtr: off
 
-# BadKaiJuJu:
-#   title: Bad KaiJuJu
+BadKaiJuJu:
+  title: Bad KaiJuJu
 
-# danm8ku:
-#   videoWait: off
+danm8ku:
+  videoWait: off
 
 down8:
   videoWait: off
