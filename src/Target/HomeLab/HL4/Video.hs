@@ -12,7 +12,7 @@ windowPadV :: Word16
 windowPadV = 3
 
 windowStart :: Word16
-windowStart = videoStart + windowPadV * numCols
+windowStart = videoStart + windowPadV * rowstride
 
 blocks :: [Word8]
 blocks =

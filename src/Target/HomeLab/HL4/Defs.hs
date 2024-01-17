@@ -7,8 +7,8 @@ import Data.Word
 videoStart :: Word16
 videoStart = 0xf800
 
-numCols :: (Num a) => a
-numCols = 32
+rowstride :: (Num a) => a
+rowstride = 32
 
 pageVideo :: Z80ASM
 pageVideo = out [0xff] A

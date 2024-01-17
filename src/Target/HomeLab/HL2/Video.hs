@@ -15,17 +15,17 @@ import qualified Data.ByteString as BS
 import Codec.Picture
 
 windowPadH :: Word16
-windowPadH = (numCols - windowWidth) `div` 2
+windowPadH = (rowstride - windowWidth) `div` 2
 
 windowPadV :: Word16
 windowPadV = 3
 
 windowStart :: Word16
-windowStart = videoStart + windowPadH + windowPadV * numCols
+windowStart = videoStart + windowPadH + windowPadV * rowstride
 
 -- | Pre: `A` is X coordinate, `C` is Y coordinate, and `B` is sprite height
 drawSprite :: Location -> Z80ASM
-drawSprite = HomeLab.drawSprite blocks windowStart numCols
+drawSprite = HomeLab.drawSprite blocks windowStart rowstride
 
 blocks :: [Word8]
 blocks =

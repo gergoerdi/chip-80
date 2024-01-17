@@ -1,5 +1,7 @@
 module Target.HomeLab.Video where
 
+import CHIP80.Video
+
 import Z80
 import Z80.Utils
 import Data.Word
@@ -9,12 +11,6 @@ import Data.Bits
 import Data.Char
 import qualified Data.ByteString as BS
 import Codec.Picture
-
-pictureWidth :: Num a => a
-pictureWidth = 64
-
-pictureHeight :: Num a => a
-pictureHeight = 32
 
 windowWidth :: Word16
 windowWidth = pictureWidth `div` 2

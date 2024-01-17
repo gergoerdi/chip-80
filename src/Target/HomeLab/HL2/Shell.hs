@@ -59,7 +59,7 @@ game images logo = mdo
         rst 0x28
 
         ld HL logoData
-        ld DE $ videoStart + 3 * numCols + fromIntegral ((numCols - logoWidth) `div` 2)
+        ld DE $ videoStart + 3 * rowstride + fromIntegral ((rowstride - logoWidth) `div` 2)
         decLoopB logoHeight do
             ld A B
             ld BC $ fromIntegral logoWidth
@@ -67,7 +67,7 @@ game images logo = mdo
             ld B A
 
             push HL
-            ld HL $ fromIntegral $ numCols - logoWidth
+            ld HL $ fromIntegral $ rowstride - logoWidth
             add HL DE
             ex DE HL
             pop HL

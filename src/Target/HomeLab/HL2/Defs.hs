@@ -8,8 +8,8 @@ import Data.Char
 videoStart :: Word16
 videoStart = 0xc001
 
-numCols :: (Num a) => a
-numCols = 40
+rowstride :: (Num a) => a
+rowstride = 40
 
 invert :: String -> String
 invert = map invert1
