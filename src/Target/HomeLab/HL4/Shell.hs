@@ -64,14 +64,18 @@ game images logo = mdo
 
     -- pageRAM
 
-    ld IX quirks
-    ld IY image
-    machine_ $ 0x7000
+    loopForever do
+        ld IX quirks
+        ld IY image
+        call machine
 
     banner <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $ "CHIP-80   https://gergo.erdi.hu/"
 
     let (logoWidth, logoHeight, logoBytes) = encodeFromPng logo
     logoData <- labelled $ db logoBytes
+
+    let baseAddr = 0x7000
+    machine <- labelled $ machine_ baseAddr
 
     image <- labelled $ db $ let [(_, _, image)] = images in image
     quirks <- labelled $ db $ let [(_, quirks, _)] = images in encodeQuirks quirks

@@ -21,10 +21,9 @@ scanKeys_ keyBuf = do
             ld [HL] 0x00
             Z80.bit i A
             unlessFlag NZ $ dec [HL]
-    -- -- Check for RUN/BRK
-    -- ld A [0x3afd]
-    -- Z80.bit 7 A
-    Z80.or 0xff
+    -- Check for CR
+    ld A [0xe801]
+    Z80.bit 1 A
     ret
   where
     sortedKeymap =
