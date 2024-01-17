@@ -14,6 +14,8 @@ import Data.Function (on)
 --   Post: Z flag iff the run/brk key was pressed
 scanKeys_ :: Location -> Z80ASM
 scanKeys_ keyBuf = do
+    pageIO
+
     forM_ sortedKeymap \(keys@((addr, _):_)) -> do
         ld A [addr]
         forM_ keys \(_, (i, value)) -> do
@@ -24,6 +26,8 @@ scanKeys_ keyBuf = do
     -- Check for CR
     ld A [0xe801]
     Z80.bit 1 A
+
+    pageRAM
     ret
   where
     sortedKeymap =

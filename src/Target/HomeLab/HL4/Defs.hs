@@ -10,8 +10,8 @@ videoStart = 0xf800
 rowstride :: (Num a) => a
 rowstride = 64
 
-pageVideo :: Z80ASM
-pageVideo = out [0xff] A
+pageIO :: Z80ASM
+pageIO = out [0xff] A
 
 pageRAM :: Z80ASM
 pageRAM = out [0x7f] A

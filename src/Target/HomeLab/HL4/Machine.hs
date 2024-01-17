@@ -51,7 +51,7 @@ machine_ baseAddr = mdo
     clearScreen <- labelled do
         ld HL windowStart
         ld DE $ rowstride - fromIntegral windowWidth
-        pageVideo
+        pageIO
         decLoopB (fromIntegral windowHeight) do
             ld C B
             decLoopB (fromIntegral windowWidth) do
@@ -71,7 +71,7 @@ machine_ baseAddr = mdo
         ret
 
     spritePost <- labelled do
-        pageVideo
+        pageIO
         call spritePost'
         pageRAM
         ret
