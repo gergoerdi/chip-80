@@ -1,9 +1,10 @@
-module Target.HomeLab.HL4.Shell ({- withGamesFrom -} game) where
+module Target.HomeLab.HL4.Shell (withGamesFrom) where
 
 import Target.HomeLab.HL4.Defs
 import CHIP80.Quirks
--- import Target.HomeLab.HL2.Machine
--- import Target.HomeLab.HL2.Video (encodeFromPng)
+import CHIP80.Game
+import Target.HomeLab.HL4.Machine
+import Target.HomeLab.HL4.Video64 (encodeFromPng)
 import ZX0
 import ZX0.Compress
 
@@ -28,24 +29,50 @@ import Data.Text (unpack)
 import System.FilePath
 import Text.Printf
 
+withGamesFrom :: FilePath -> IO Z80ASM
+withGamesFrom dir = do
+    logo <- BS.readFile (dir </> "logo.png")
+    selected <- decodeFileThrow (dir </> "hl4.yaml")
+    images <- readGames selected (dir </> "games.yaml")
+    pure $ game images logo
+
 game :: [(String, Quirks Bool, BS.ByteString)] -> BS.ByteString -> Z80ASM
 game images logo = mdo
-    pageVideo
-    ld DE videoStart
-    ld HL banner
-    skippable \end -> loopForever do
-        ld A [HL]
-        inc HL
-        Z80.and A
-        jp Z end
-        ld [DE] A
-        inc DE
-        inc DE
-    pageRAM
-    loopForever $ pure ()
+    -- pageVideo
+
+    -- ld DE videoStart
+    -- ld HL banner
+    -- skippable \end -> loopForever do
+    --     ld A [HL]
+    --     inc HL
+    --     Z80.and A
+    --     jp Z end
+    --     ld [DE] A
+    --     inc DE
+
+    -- ld DE $ videoStart + rowstride * 4
+    -- ld HL logoData
+    -- decLoopB logoHeight do
+    --     push BC
+    --     ld BC $ fromIntegral logoWidth
+    --     ldir
+    --     ld BC $ fromIntegral $ rowstride - logoWidth
+    --     ex DE HL
+    --     add HL BC
+    --     ex DE HL
+    --     pop BC
+
+    -- pageRAM
+
+    ld IX quirks
+    ld IY image
+    machine_ $ 0x7000
 
     banner <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $ "CHIP-80   https://gergo.erdi.hu/"
 
-    -- let (logoWidth, logoHeight, logoBytes) = encodeFromPng logo
-    -- logoData <- labelled $ db logoBytes
+    let (logoWidth, logoHeight, logoBytes) = encodeFromPng logo
+    logoData <- labelled $ db logoBytes
+
+    image <- labelled $ db $ let [(_, _, image)] = images in image
+    quirks <- labelled $ db $ let [(_, quirks, _)] = images in encodeQuirks quirks
     pure ()

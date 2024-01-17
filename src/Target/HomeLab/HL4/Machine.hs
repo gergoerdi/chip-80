@@ -1,13 +1,14 @@
-module Target.HomeLab.HL2.Machine (machine_) where
+module Target.HomeLab.HL4.Machine (machine_) where
 
-import Target.HomeLab.HL2.Defs
+import Target.HomeLab.HL4.Defs
 import CHIP80.CPU
-import Target.HomeLab.HL2.Input
-import Target.HomeLab.HL2.Video
+import Target.HomeLab.HL4.Input
+import Target.HomeLab.HL4.Video64
 import ZX0
 
 import Z80
 import Z80.Utils
+import Control.Monad
 
 -- | Pre: `IX` contains address of quirks settings
 -- | Pre: `IY` contains address of compressed program
@@ -25,15 +26,20 @@ machine_ baseAddr = mdo
     call resetCPU
     loopForever do
         call stepCPU
-        ld HL lastFrame
-        ld A [0x403f]
-        cp [HL]
-        unlessFlag Z do
-            ld [HL] A
+
+        -- Check for end of vblank
+        ld A [0xe802]
+        Z80.bit 0 A
+        unlessFlag NZ do
             call scanKeys
-            ret Z              -- ... until RUN/BRK is pressed
+            ret Z          -- ... until RUN/BRK is pressed
             call newFrame
-    lastFrame <- labelled $ db [0]
+
+            -- Wait for start of vblank
+            withLabel \waitFrame2 -> do
+                ld A [0xe802]
+                Z80.bit 0 A
+                jp Z waitFrame2
 
     uncompress <- labelled standardFwd
 
@@ -44,14 +50,16 @@ machine_ baseAddr = mdo
 
     clearScreen <- labelled do
         ld HL windowStart
-        ld DE (rowstride - windowWidth)
-        decLoopB 16 do
+        ld DE $ rowstride - fromIntegral windowWidth
+        pageVideo
+        decLoopB (fromIntegral windowHeight) do
             ld C B
-            decLoopB 32 do
+            decLoopB (fromIntegral windowWidth) do
                 ld [HL] 0x20
                 inc HL
             add HL DE
             ld B C
+        pageRAM
         ret
 
     spritePre <- labelled do
@@ -62,7 +70,13 @@ machine_ baseAddr = mdo
         pop AF
         ret
 
-    spritePost <- label
+    spritePost <- labelled do
+        pageVideo
+        call spritePost'
+        pageRAM
+        ret
+
+    spritePost' <- label
     ld A 0x00
     spriteX <- subtract 1 <$> label
     ld C 0x00

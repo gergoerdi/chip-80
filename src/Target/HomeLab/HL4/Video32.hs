@@ -1,8 +1,8 @@
-module Target.HomeLab.HL4.Video where
+module Target.HomeLab.HL4.Video32 where
 
 import Target.HomeLab.HL4.Defs
-import Target.HomeLab.Video hiding (encodeFromPng, drawSprite)
-import qualified Target.HomeLab.Video as HomeLab
+import Target.HomeLab.Video2x2 hiding (encodeFromPng, drawSprite)
+import qualified Target.HomeLab.Video2x2 as HomeLab
 
 import Data.Word
 import qualified Data.ByteString as BS

@@ -1,8 +1,12 @@
-module Target.HomeLab.HL2.Video where
+module Target.HomeLab.HL2.Video
+    ( windowWidth, windowHeight, windowStart
+    , drawSprite
+    , encodeFromPng
+    ) where
 
 import Target.HomeLab.HL2.Defs
-import Target.HomeLab.Video hiding (encodeFromPng, drawSprite)
-import qualified Target.HomeLab.Video as HomeLab
+import Target.HomeLab.Video2x2 hiding (encodeFromPng, drawSprite)
+import qualified Target.HomeLab.Video2x2 as HomeLab
 
 import Z80
 import Z80.Utils

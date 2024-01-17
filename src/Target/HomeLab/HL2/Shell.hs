@@ -160,16 +160,15 @@ game images logo = mdo
     drawUI <- labelled drawUI_
     machine <- labelled $ machine_ baseAddr
 
-    progs <- forM images \(title, Quirks{..}, image) -> do
+    progs <- forM images \(title, quirks, image) -> do
         let boolToByte = \case
                 True -> 1
                 False -> 0
 
         name <- labelled $ db $ (<> [0]) . take 16 . map (fromIntegral . ord . toUpper) $ title
-        quirks <- labelled $ db . map boolToByte $
-            [ shiftVY, resetVF, incrementPtr, videoWait, clipSprites ]
+        quirks' <- labelled $ db $ encodeQuirks quirks
         prog <- labelled $ db image
-        pure (name, quirks, prog)
+        pure (name, quirks', prog)
 
     titleTable <- labelled $ dw [ title | (title, _, _) <- progs ]
     quirksTable <- labelled $ dw [ quirks | (_, quirks, _) <- progs ]

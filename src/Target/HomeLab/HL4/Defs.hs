@@ -8,7 +8,7 @@ videoStart :: Word16
 videoStart = 0xf800
 
 rowstride :: (Num a) => a
-rowstride = 32
+rowstride = 64
 
 pageVideo :: Z80ASM
 pageVideo = out [0xff] A

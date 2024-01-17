@@ -1,4 +1,4 @@
-module Target.HomeLab.Video where
+module Target.HomeLab.Video2x2 where
 
 import CHIP80.Video
 
@@ -71,7 +71,7 @@ drawSprite blocks windowStart rowstride vidBuf = mdo
 
         call renderColumns
 
-        ld DE $ fromIntegral pictureWidth `div` 8 + (fromIntegral pictureWidth `div` 8 - 2)
+        ld DE $ pictureWidth `div` 8 + (pictureWidth `div` 8 - 2)
         add IX DE
         ld DE $ rowstride - 8
         add HL DE
@@ -117,8 +117,8 @@ drawSprite blocks windowStart rowstride vidBuf = mdo
             add IY DE
 
             -- Are we still in bounds?
-            Z80.or A
             push DE
+            Z80.or A
             ld DE windowEnd
             sbc HL DE
             add HL DE
@@ -165,6 +165,8 @@ encodeFromPng blocks bs = (byteWidth, byteHeight, bytes)
     doubles (x1:x2:xs) = (x1, x2):doubles xs
     doubles [] = []
 
-    Right dimg = decodePng bs
+    dimg = case decodePng bs of
+        Right dimg -> dimg
+        Left err -> error err
     pixelWidth = dynamicMap imageWidth dimg
     pixelHeight = dynamicMap imageHeight dimg

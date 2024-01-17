@@ -12,8 +12,7 @@ import System.Directory
 
 emit :: IO ()
 emit = do
-    -- prog <- org 16700 <$> withGamesFrom "data/games"
-    let prog = org 16700 $ game mempty mempty
+    prog <- org 16700 <$> withGamesFrom "data/games"
     let name = "_build/chip80-hl4"
 
     createDirectoryIfMissing True (takeDirectory name)
