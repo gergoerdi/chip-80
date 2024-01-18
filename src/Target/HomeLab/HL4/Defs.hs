@@ -15,3 +15,9 @@ pageIO = out [0xff] A
 
 pageRAM :: Z80ASM
 pageRAM = out [0x7f] A
+
+printA :: Z80ASM
+printA = call 0x0284
+
+getKeyA :: Z80ASM
+getKeyA = call 0x035b
