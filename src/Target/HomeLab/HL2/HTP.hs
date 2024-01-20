@@ -7,7 +7,7 @@ import Target.HomeLab.HTP
 import qualified Data.ByteString as BS
 
 htpWithAutoStart :: BS.ByteString -> ASMBlock -> BS.ByteString
-htpWithAutoStart label mainBlock = htp label
+htpWithAutoStart label mainBlock = htp 100 label
     [ org 0x4002 $ dw [asmOrg mainBlock]
     , mainBlock
     ]

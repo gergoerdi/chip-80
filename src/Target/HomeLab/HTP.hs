@@ -6,11 +6,11 @@ import Z80.Utils
 import qualified Data.ByteString as BS
 import Data.List (intersperse)
 
-htp :: BS.ByteString -> [ASMBlock] -> BS.ByteString
-htp label blocks = mconcat $
+htp :: Int -> BS.ByteString -> [ASMBlock] -> BS.ByteString
+htp leaderLength label blocks = mconcat $
     [leader] <> intersperse (BS.singleton 0x01 <> leader) records <> [BS.singleton 0x00]
   where
-    leader = BS.replicate 100 0x00
+    leader = BS.replicate leaderLength 0x00
     records = zipWith record (label:repeat mempty) blocks
 
     record label block = mconcat
