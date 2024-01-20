@@ -14,6 +14,8 @@ import Control.Monad
 -- | Pre: `IY` contains address of compressed program
 machine_ :: Location -> Z80ASM
 machine_ baseAddr = mdo
+    pageIO
+
     call init
 
     -- Uncompress program into CHIP-8 RAM
@@ -51,7 +53,6 @@ machine_ baseAddr = mdo
     clearScreen <- labelled do
         ld HL windowStart
         ld DE $ rowstride - fromIntegral windowWidth
-        pageIO
         decLoopB (fromIntegral windowHeight) do
             ld C B
             decLoopB (fromIntegral windowWidth) do
@@ -59,7 +60,6 @@ machine_ baseAddr = mdo
                 inc HL
             add HL DE
             ld B C
-        pageRAM
         ret
 
     spritePre <- labelled do
@@ -71,9 +71,7 @@ machine_ baseAddr = mdo
         ret
 
     spritePost <- labelled do
-        pageIO
         call spritePost'
-        pageRAM
         ret
 
     spritePost' <- label

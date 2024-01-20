@@ -38,6 +38,8 @@ withGamesFrom dir = do
 
 game :: [(String, Quirks Bool, BS.ByteString)] -> BS.ByteString -> Z80ASM
 game images logo = mdo
+    di
+
     -- Restore output vector
     ld HL 0x0283
     ld [0x4004] HL
@@ -156,7 +158,6 @@ game images logo = mdo
             push BC
             pop IY
 
-            pageRAM
             call machine
 
     iyBuf <- labelled $ dw [0]
