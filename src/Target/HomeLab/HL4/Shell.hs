@@ -38,6 +38,10 @@ withGamesFrom dir = do
 
 game :: [(String, Quirks Bool, BS.ByteString)] -> BS.ByteString -> Z80ASM
 game images logo = mdo
+    -- Restore output vector
+    ld HL 0x0283
+    ld [0x4004] HL
+
     -- Restore input vector
     ld HL 0x035c
     ld [0x4002] HL

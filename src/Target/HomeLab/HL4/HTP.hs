@@ -8,6 +8,6 @@ import qualified Data.ByteString as BS
 
 htpWithAutoStart :: BS.ByteString -> ASMBlock -> BS.ByteString
 htpWithAutoStart label mainBlock = htp label
-    [ org 0x4002 $ dw [asmOrg mainBlock]
-    , mainBlock
+    [ mainBlock
+    , org 0x4002 $ dw [asmOrg mainBlock, asmOrg mainBlock]
     ]
