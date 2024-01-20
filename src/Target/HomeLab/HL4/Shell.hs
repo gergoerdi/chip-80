@@ -42,7 +42,7 @@ game images logo = mdo
     ld HL 0x035c
     ld [0x4002] HL
 
-    let baseAddr = 0xc000
+    let baseAddr = 0xb000
     ld SP $ baseAddr - 1
 
     ld [iyBuf] IY -- Printing doesn't work unless IY is restored
