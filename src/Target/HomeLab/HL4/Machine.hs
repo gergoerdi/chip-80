@@ -10,17 +10,19 @@ import Z80
 import Z80.Utils
 import Control.Monad
 
--- | Pre: `IX` contains address of quirks settings
--- | Pre: `IY` contains address of compressed program
+-- | Pre: `IX` contains address of quirks settings followed by the compressed program
 machine_ :: Location -> Z80ASM
 machine_ baseAddr = mdo
     pageIO
 
+    push IX
     call init
 
     -- Uncompress program into CHIP-8 RAM
-    push IY
     pop HL
+    ld DE 5 -- skip 5 bytes of quirks
+    add HL DE
+
     ld DE $ baseAddr + 0x200
     call uncompress
 

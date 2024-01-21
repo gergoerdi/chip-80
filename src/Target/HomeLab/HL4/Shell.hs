@@ -142,21 +142,13 @@ game images logo = mdo
             sla A
             ld E A
 
-            ld HL quirksTable
-            add HL DE
-            ld C [HL]
-            inc HL
-            ld B [HL]
-            push BC
-            pop IX
-
             ld HL progTable
             add HL DE
             ld C [HL]
             inc HL
             ld B [HL]
             push BC
-            pop IY
+            pop IX
 
             call machine
 
@@ -184,18 +176,17 @@ game images logo = mdo
 
     machine <- labelled $ machine_ baseAddr
 
+    titleTable <- labelled $ dw [ title | (title, _) <- progs ]
+    progTable <- labelled $ dw [ prog | (_, prog) <- progs ]
+
     progs <- forM images \(title, quirks, image) -> do
         let boolToByte = \case
                 True -> 1
                 False -> 0
 
         name <- labelled $ db $ (<> [0]) . take 16 . map (fromIntegral . ord . toUpper) $ title
-        quirks' <- labelled $ db $ encodeQuirks quirks
-        prog <- labelled $ db image
-        pure (name, quirks', prog)
+        prog <- labelled $ db $ encodeQuirks quirks <> image
+        pure (name, prog)
 
-    titleTable <- labelled $ dw [ title | (title, _, _) <- progs ]
-    quirksTable <- labelled $ dw [ quirks | (_, quirks, _) <- progs ]
-    progTable <- labelled $ dw [ prog | (_, _, prog) <- progs ]
 
     pure ()
