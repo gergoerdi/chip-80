@@ -51,10 +51,8 @@ game images logo = mdo
     let baseAddr = 0xb000
     ld SP $ baseAddr - 1
 
-    ld [iyBuf] IY -- Printing doesn't work unless IY is restored
-
     loopForever do
-        ld IY [iyBuf]
+        ld IY 0x4000 -- Printing doesn't work unless IY is restored
         pageIO
 
         -- Clear screen
@@ -151,8 +149,6 @@ game images logo = mdo
             pop IX
 
             call machine
-
-    iyBuf <- labelled $ dw [0]
 
     print <- labelled do
         loopForever do
