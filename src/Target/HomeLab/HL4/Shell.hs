@@ -91,6 +91,10 @@ game images logo = mdo
             ex DE HL
             pop BC
 
+        ld DE $ videoAt (31, 6)
+        ld HL instructions
+        call print
+
         -- Print menu of available programs
         ld IX titleTable
 
@@ -195,10 +199,12 @@ game images logo = mdo
 
     let (logoWidth, logoHeight, logoBytes) = encodeFromPng logo
     logoData <- labelled $ db logoBytes
-    progCopy <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $
+    progCopy <- labelled $ db $ (<> [0]) . map (fromIntegral . ord) $
         "Gergo Erdi's"
-    logoCopy <- labelled $ db $ (++ [0]) $ map (fromIntegral . ord . toUpper) $
+    logoCopy <- labelled $ db $ (<> [0]) . map (fromIntegral . ord) $
         "Logo by Tim Franssen"
+    instructions <- labelled $ db $ (<> [0]) . map (fromIntegral . ord) $
+        "1234/QWER/ASDF/ZXCV for input, Return (CR) to reset"
 
     machine <- labelled $ machine_ baseAddr
 
