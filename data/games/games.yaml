@@ -1,6 +1,9 @@
 1-chip8-logo:
   title: CHIP-8 Logo
 
+5-quirks:
+  title: Quirks test
+  
 6-keypad:
   title: Keypad test
 
@@ -11,6 +14,12 @@ hidden:
   shiftVY: off
   resetVF: off
   incrementPtr: off
+
+blitz:
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
+  videoWait: off
 
 snek:
   title: Snek
@@ -68,3 +77,69 @@ danm8ku:
 down8:
   videoWait: off
   clipSprites: off
+
+animal_race:
+  title: Animal Race
+  shiftVY: off
+  resetVF: off
+  videoWait: off
+
+bowling:
+  videoWait: on
+
+cave:
+  videoWait: on
+
+rush_hour:
+  videoWait: off
+
+filter:
+  videoWait: on
+
+mastermind:
+  videoWait: off
+
+merlin:
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
+  videoWait: off
+
+pong1:
+  title: Pong (1 player)
+  videoWait: on
+
+pong2:
+  title: Pong (2 players)
+  videoWait: on
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
+
+soccer:
+  videoWait: on
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
+  
+space_intercept:
+  videoWait: on
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
+
+submarine:
+  videoWait: on
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
+
+ufo:
+  videoWait: on
+  shiftVY: off
+  resetVF: off
+  incrementPtr: off
+
+3d-vipr-maze:
+  title: 3D VIPr Maze
+  videoWait: off
