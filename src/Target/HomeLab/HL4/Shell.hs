@@ -112,25 +112,43 @@ game images logo = mdo
             ld DE $ videoAt (20, 32)
             call printMenuColumn
 
-        withLabel \inputLoop -> do
+        withLabel \inputLoop -> mdo
             getKeyA
-            sub $ fromIntegral . ord $ '0'
-            jp C inputLoop
 
-            cp (fromIntegral $ length progs + 1)
-            jp NC inputLoop
+            tryDigit <- labelled $ do
+                cp $ fromIntegral . ord $ '0'
+                jp C tryLetter
 
-            ld D 0
-            sla A
-            ld E A
+                cp $ fromIntegral . ord $ '9'
+                jp NC tryLetter
 
-            ld HL progTable
-            add HL DE
-            ld C [HL]
-            inc HL
-            ld B [HL]
-            push BC
-            pop IX
+                sub $ fromIntegral . ord $ '0'
+                cp (fromIntegral $ length progs + 1)
+                jp NC inputLoop
+                jp found
+
+            tryLetter <- labelled do
+                cp $ fromIntegral . ord $ 'A'
+                jp C inputLoop
+
+                sub $ fromIntegral . ord $ 'A'
+                add A 10
+                cp (fromIntegral $ length progs + 1)
+                jp NC inputLoop
+                jp found
+
+            found <- labelled do
+                ld D 0
+                sla A
+                ld E A
+
+                ld HL progTable
+                add HL DE
+                ld C [HL]
+                inc HL
+                ld B [HL]
+                push BC
+                pop IX
 
             call machine
 
