@@ -17,7 +17,7 @@ pageRAM :: Z80ASM
 pageRAM = out [0x7f] A
 
 printA :: Z80ASM
-printA = call 0x0284
+printA = rst 0x28
 
 getKeyA :: Z80ASM
 getKeyA = call 0x035b

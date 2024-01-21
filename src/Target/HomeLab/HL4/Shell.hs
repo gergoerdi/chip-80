@@ -32,7 +32,7 @@ import Text.Printf
 withGamesFrom :: FilePath -> IO Z80ASM
 withGamesFrom dir = do
     logo <- BS.readFile (dir </> "logo-url.png")
-    selected <- decodeFileThrow (dir </> "hl2.yaml")
+    selected <- decodeFileThrow (dir </> "hl4.yaml")
     images <- readGames selected (dir </> "games.yaml")
     pure $ game images logo
 
@@ -69,27 +69,17 @@ game images logo = mdo
         ld HL videoStart
         ld [0x4014] HL
 
-        ld DE $ videoStart + rowstride * 2 + (rowstride - fromIntegral logoWidth) `div` 2 - 3
+        let videoAt (row, col) = videoStart + rowstride * row + col
+
+        ld DE $ videoAt (2, (rowstride - fromIntegral logoWidth) `div` 2 - 3)
         ld HL progCopy
-        skippable \end -> loopForever do
-            ld A [HL]
-            inc HL
-            Z80.and A
-            jp Z end
-            ld [DE] A
-            inc DE
+        call print
 
-        ld DE $ videoStart + rowstride * (2 + fromIntegral logoHeight + 2) + 38
+        ld DE $ videoAt (2 + fromIntegral logoHeight + 2, 38)
         ld HL logoCopy
-        skippable \end -> loopForever do
-            ld A [HL]
-            inc HL
-            Z80.and A
-            jp Z end
-            ld [DE] A
-            inc DE
+        call print
 
-        ld DE $ videoStart + rowstride * 4 + (rowstride - fromIntegral logoWidth) `div` 2
+        ld DE $ videoAt (4, (rowstride - fromIntegral logoWidth) `div` 2)
         ld HL logoData
         decLoopB logoHeight do
             push BC
@@ -101,32 +91,26 @@ game images logo = mdo
             ex DE HL
             pop BC
 
-        let cr = do
-                ld A $ fromIntegral . ord $ '\r'
-                printA
-
-        decLoopB 20 do
-            cr
-
         -- Print menu of available programs
-        let space = do
-                ld A 0x20
-                printA
-        ld C $ fromIntegral . ord $ '0'
         ld IX titleTable
-        decLoopB (fromIntegral $ length progs) do
-            ld L [IX]
-            inc IX
-            ld H [IX]
-            inc IX
 
-            space
-            ld A C
-            inc C
-            printA
-            space
+        -- First column: first ten games
+        ld C $ fromIntegral . ord $ '0' -- labelled '0'..'9'
+        ld DE $ videoAt (20, 0)
+        ld A [numProgs]
+        cp 10
+        unlessFlag C $ ld A 10
+        ld B A
+        call printMenuColumn
 
-            call println
+        -- Print second column, if we have more than 10 entries
+        ld A [numProgs]
+        sub 10
+        unlessFlag C do
+            ld B A
+            ld C $ fromIntegral . ord $ 'A' -- labelled 'A'..
+            ld DE $ videoAt (20, 32)
+            call printMenuColumn
 
         withLabel \inputLoop -> do
             getKeyA
@@ -150,18 +134,46 @@ game images logo = mdo
 
             call machine
 
+    printMenuColumn <- labelled do
+        withLabel \loop -> do
+            printLn do
+                ld L [IX]
+                inc IX
+                ld H [IX]
+                inc IX
+
+                space
+                ld A C
+                inc C
+                printA
+                space
+
+                call print
+            djnz loop
+        ret
+
+    -- `DE`: destination, `HL`: start of 0-delimited string
     print <- labelled do
         loopForever do
             ld A [HL]
+            inc HL
             Z80.and A
             ret Z
-            printA
-            inc HL
+            ld [DE] A
+            inc DE
 
-    println <- labelled do
-        call print
-        ld A $ fromIntegral . ord $ '\r'
-        jp 0x0284
+    let space = inc DE
+        printA = do
+            ld [DE] A
+            inc DE
+
+    let printLn body = do
+            push DE
+            body
+            pop DE
+            ld HL 64
+            add HL DE
+            ex DE HL
 
     let (logoWidth, logoHeight, logoBytes) = encodeFromPng logo
     logoData <- labelled $ db logoBytes
@@ -172,6 +184,7 @@ game images logo = mdo
 
     machine <- labelled $ machine_ baseAddr
 
+    numProgs <- labelled $ db [fromIntegral $ length progs]
     titleTable <- labelled $ dw [ title | (title, _) <- progs ]
     progTable <- labelled $ dw [ prog | (_, prog) <- progs ]
 
