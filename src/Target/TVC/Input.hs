@@ -1,8 +1,8 @@
 module Target.TVC.Input (scanKeys_) where
 
-import Target.TVC.Defs
 import Z80
 import Z80.Utils
+import Z80.Machine.TVC.Defs
 
 import Data.Word
 import Control.Monad

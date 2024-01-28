@@ -1,6 +1,6 @@
 module Target.HomeLab.HL4.Input (scanKeys_) where
 
-import Target.HomeLab.HL4.Defs
+import Z80.Machine.HomeLab.HL34
 import Z80
 import Z80.Utils
 

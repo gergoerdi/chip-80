@@ -2,7 +2,7 @@ module Target.HomeLab.HL4.HTP where
 
 import Z80
 import Z80.Utils
-import Target.HomeLab.HTP
+import Z80.Machine.HomeLab.HTP
 
 import qualified Data.ByteString as BS
 

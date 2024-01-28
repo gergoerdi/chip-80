@@ -4,7 +4,7 @@ module Target.HomeLab.HL4.Video64
     , encodeFromPng
     ) where
 
-import Target.HomeLab.HL4.Defs
+import Z80.Machine.HomeLab.HL34
 import Target.HomeLab.Video1x1 hiding (encodeFromPng, drawSprite)
 import qualified Target.HomeLab.Video1x1 as HomeLab
 

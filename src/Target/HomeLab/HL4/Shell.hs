@@ -1,6 +1,6 @@
 module Target.HomeLab.HL4.Shell (withGamesFrom) where
 
-import Target.HomeLab.HL4.Defs
+import Z80.Machine.HomeLab.HL34
 import CHIP80.Quirks
 import CHIP80.Game
 import Target.HomeLab.HL4.Machine

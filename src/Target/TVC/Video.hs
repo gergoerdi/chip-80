@@ -1,8 +1,6 @@
 module Target.TVC.Video where
 
-import Target.TVC.Defs
--- import Target.HomeLab.HL2.Machine
--- import Target.HomeLab.HL2.Video (encodeFromPng)
+import Z80.Machine.TVC.Defs
 
 import Z80
 import Z80.Utils

@@ -1,9 +1,9 @@
 module Target.TVC where
 
 import Target.TVC.Shell
-import Target.TVC.Cas
 
 import Z80
+import Z80.Machine.TVC.Cas
 
 import qualified Data.ByteString as BS
 import Data.String (fromString)

@@ -1,8 +1,8 @@
 module Target.HomeLab.HL2.Input (scanKeys_) where
 
-import Target.HomeLab.HL2.Defs
 import Z80
 import Z80.Utils
+import Z80.Machine.HomeLab.HL2
 
 import Data.Word
 import Control.Monad

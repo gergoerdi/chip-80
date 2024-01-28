@@ -1,7 +1,7 @@
 module Target.TVC.Machine (machine_) where
 
-import Target.TVC.Defs
 import CHIP80.CPU
+import Z80.Machine.TVC.Defs
 import Target.TVC.Input
 import Target.TVC.Video
 

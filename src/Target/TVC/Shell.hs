@@ -1,8 +1,8 @@
 module Target.TVC.Shell (withGamesFrom) where
 
 import CHIP80.Quirks
+import Z80.Machine.TVC.Defs
 import Target.TVC.Machine
-import Target.TVC.Defs
 import Target.TVC.Video
 
 import Z80

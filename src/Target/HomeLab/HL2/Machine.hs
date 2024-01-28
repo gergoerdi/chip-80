@@ -1,6 +1,6 @@
 module Target.HomeLab.HL2.Machine (machine_) where
 
-import Target.HomeLab.HL2.Defs
+import Z80.Machine.HomeLab.HL2
 import CHIP80.CPU
 import Target.HomeLab.HL2.Input
 import Target.HomeLab.HL2.Video
