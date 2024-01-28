@@ -4,8 +4,8 @@ import Target.TVC.Defs
 import CHIP80.CPU
 import Target.TVC.Input
 import Target.TVC.Video
-import ZX0
 
+import Z80.ZX0
 import Z80
 import Z80.Utils
 

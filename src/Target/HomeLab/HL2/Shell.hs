@@ -5,8 +5,6 @@ import CHIP80.Quirks
 import CHIP80.Game
 import Target.HomeLab.HL2.Machine
 import Target.HomeLab.HL2.Video (encodeFromPng)
-import ZX0
-import ZX0.Compress
 
 import Z80
 import Z80.Utils

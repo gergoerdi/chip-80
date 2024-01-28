@@ -1,9 +1,9 @@
 module CHIP80.Game (readGames) where
 
 import CHIP80.Quirks
-import ZX0.Compress
 
 import Z80
+import Z80.ZX0.Compress
 import Control.Monad
 import qualified Data.ByteString as BS
 import Data.String (fromString)
@@ -35,7 +35,7 @@ readGames selected yamlPath = do
             ]
 
     images <- forM games \(title, quirks, fileName) -> do
-        (image, _) <- compressForward =<< BS.readFile fileName
+        image <- compressForward =<< BS.readFile fileName
         pure (title, quirks, image)
 
     sizes <- forM images \(title, _quirks, image) -> do

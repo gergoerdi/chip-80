@@ -4,10 +4,10 @@ import Target.HomeLab.HL2.Defs
 import CHIP80.CPU
 import Target.HomeLab.HL2.Input
 import Target.HomeLab.HL2.Video
-import ZX0
 
 import Z80
 import Z80.Utils
+import Z80.ZX0
 
 -- | Pre: `IX` contains address of quirks settings followed by the compressed program
 machine_ :: Location -> Z80ASM

@@ -4,10 +4,10 @@ import Target.HomeLab.HL4.Defs
 import CHIP80.CPU
 import Target.HomeLab.HL4.Input
 import Target.HomeLab.HL4.Video64
-import ZX0
 
 import Z80
 import Z80.Utils
+import Z80.ZX0
 import Control.Monad
 
 -- | Pre: `IX` contains address of quirks settings followed by the compressed program

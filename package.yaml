@@ -5,12 +5,11 @@ license: GPL-3
 
 extra-source-files:
   - README.md
-  - import/ZX0/src/*.h
-  - import/ZX0/src/*.c
 
 dependencies:
   - base
   - z80
+  - z80-utils
   - bytestring
   - filepath
   - directory
@@ -30,12 +29,7 @@ default-extensions:
 
 source-dirs:
   - src
-
-c-sources:
-  - import/ZX0/src/compress.c
-  - import/ZX0/src/optimize.c
-  - import/ZX0/src/memory.c
-
+  
 executables:
   chip80-homelab2:
     main: main.hs

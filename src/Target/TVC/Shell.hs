@@ -4,11 +4,11 @@ import CHIP80.Quirks
 import Target.TVC.Machine
 import Target.TVC.Defs
 import Target.TVC.Video
-import ZX0
-import ZX0.Compress
 
 import Z80
 import Z80.Utils
+import Z80.ZX0
+import Z80.ZX0.Compress
 import Data.Word
 import Data.Int
 import Control.Monad
@@ -38,7 +38,7 @@ withGamesFrom dir = do
     let file = "hidden"
     -- let file = "6-keypad"
     let file = "slipperyslope"
-    (image, _) <- compressForward =<< BS.readFile (dir </> file <.> "ch8")
+    image <- compressForward =<< BS.readFile (dir </> file <.> "ch8")
     let quirks_ = Quirks
           { shiftVY = True
           , resetVF = True

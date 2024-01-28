@@ -5,11 +5,11 @@ import CHIP80.Quirks
 import CHIP80.Game
 import Target.HomeLab.HL4.Machine
 import Target.HomeLab.HL4.Video64Small (encodeFromPng)
-import ZX0
-import ZX0.Compress
 
 import Z80
 import Z80.Utils
+import Z80.ZX0
+import Z80.ZX0.Compress
 import Data.Word
 import Data.Int
 import Control.Monad
