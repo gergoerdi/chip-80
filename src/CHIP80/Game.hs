@@ -1,4 +1,4 @@
-module CHIP80.Game (readGames) where
+module CHIP80.Game (Game(..), readGames) where
 
 import CHIP80.Quirks
 
@@ -16,32 +16,32 @@ import Data.Text (unpack)
 import System.FilePath
 import Text.Printf
 
-readGames :: [Key] -> FilePath -> IO [(String, Quirks Bool, BS.ByteString)]
+data Game = Game
+    { gameTitle :: String
+    , gameQuirks :: Quirks Bool
+    , gameImage :: BS.ByteString
+    }
+
+readGames :: [Key] -> FilePath -> IO [Game]
 readGames selected yamlPath = do
     let dir = takeDirectory yamlPath
     yaml <- decodeFileThrow yamlPath
 
-    let games =
-            [ (title, quirks, fileName)
-            | (name, vals) <- KeyMap.toList yaml
-            , name `elem` (selected :: [Key])
-            , let fileName = dir </> toString name <.> "ch8"
-                  stringValue (String s) = unpack s
-                  title = maybe (takeBaseName fileName) stringValue $
-                      KeyMap.lookup (fromString "title") vals
-                  quirks = applyDefaults $ case fromJSON (Object vals) of
-                      Error err -> error err
-                      Success x -> x
-            ]
+    games <- forM (filter ((`elem` selected) . fst) $ KeyMap.toList yaml) \(name, vals) -> do
+        let fileName = dir </> toString name <.> "ch8"
+            stringValue (String s) = unpack s
+            gameTitle = maybe (takeBaseName fileName) stringValue $
+                KeyMap.lookup (fromString "title") vals
+            gameQuirks = applyDefaults $ case fromJSON (Object vals) of
+                Error err -> error err
+                Success x -> x
+        gameImage <- compressForward =<< BS.readFile fileName
+        pure Game{..}
 
-    images <- forM games \(title, quirks, fileName) -> do
-        image <- compressForward =<< BS.readFile fileName
-        pure (title, quirks, image)
-
-    sizes <- forM images \(title, _quirks, image) -> do
-        let size = BS.length image
-        printf "%-16s %4d\n" title size
+    sizes <- forM games \Game{..} -> do
+        let size = BS.length gameImage
+        printf "%-16s %4d\n" gameTitle size
         pure size
     printf "%-16s %d\n" "Total:" (sum sizes)
 
-    pure images
+    pure games

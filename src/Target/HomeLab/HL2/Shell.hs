@@ -31,11 +31,11 @@ withGamesFrom :: FilePath -> IO Z80ASM
 withGamesFrom dir = do
     logo <- BS.readFile (dir </> "logo.png")
     selected <- decodeFileThrow (dir </> "hl2.yaml")
-    images <- readGames selected (dir </> "games.yaml")
-    pure $ game images logo
+    games <- readGames selected (dir </> "games.yaml")
+    pure $ shell games logo
 
-game :: [(String, Quirks Bool, BS.ByteString)] -> BS.ByteString -> Z80ASM
-game images logo = mdo
+shell :: [Game] -> BS.ByteString -> Z80ASM
+shell games logo = mdo
     -- Restore input vector
     ldVia A [0x4002] 0x06
     ldVia A [0x4003] 0x03
@@ -152,13 +152,13 @@ game images logo = mdo
 
     titleTable <- labelled $ dw [ title | (title, _) <- progs ]
     progTable <- labelled $ dw [ prog | (_, prog) <- progs ]
-    progs <- forM images \(title, quirks, image) -> do
+    progs <- forM games \Game{..} -> do
         let boolToByte = \case
                 True -> 1
                 False -> 0
 
-        name <- labelled $ db $ (<> [0]) . take 16 . map (fromIntegral . ord . toUpper) $ title
-        prog <- labelled $ db $ encodeQuirks quirks <> image
+        name <- labelled $ db $ (<> [0]) . take 16 . map (fromIntegral . ord . toUpper) $ gameTitle
+        prog <- labelled $ db $ encodeQuirks gameQuirks <> gameImage
         pure (name, prog)
     pure ()
 
