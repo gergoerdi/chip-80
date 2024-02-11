@@ -32,6 +32,11 @@ blitz:
 snek:
   title: Snek
 
+glitch_ghost:
+  title: Glitch Ghost
+  joy: "58796"
+  videoWait: off
+  
 ghostEscape:
   title: Ghost Escape
   joy: "11110"
