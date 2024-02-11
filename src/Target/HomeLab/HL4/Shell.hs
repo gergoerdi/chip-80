@@ -123,7 +123,7 @@ shell games logo = mdo
                 cp $ fromIntegral . ord $ '0'
                 jp C tryLetter
 
-                cp $ fromIntegral . ord $ '9'
+                cp $ succ . fromIntegral . ord $ '9'
                 jp NC tryLetter
 
                 sub $ fromIntegral . ord $ '0'
