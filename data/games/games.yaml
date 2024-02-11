@@ -9,6 +9,12 @@
 
 2-ibm-logo:
   title: IBM Logo
+
+3-corax+:
+  title: Corax's CHIP-8 test
+
+4-flags:
+  title: Flags test
   
 hidden:
   joy: "28465"
@@ -17,6 +23,7 @@ hidden:
   incrementPtr: off
 
 blitz:
+  joy: "00005"
   shiftVY: off
   resetVF: off
   incrementPtr: off
@@ -27,6 +34,7 @@ snek:
 
 ghostEscape:
   title: Ghost Escape
+  joy: "11110"
   videoWait: off
   
 tic-tac-toe:
@@ -36,6 +44,7 @@ tic-tac-toe:
 
 invaders:
   title: Space Invaders
+  joy: "55465"
   shiftVY: off
   resetVF: off
   incrementPtr: off
@@ -46,13 +55,16 @@ superpong:
 
 slipperyslope:
   title: Slippery Slope
+  joy: "58796"
   videoWait: off
 
 caveexplorer:
   title: Cave Explorer
+  joy: "58796"
   videoWait: off
 
 flightrunner:
+  joy: "58796"
   title: Flight Runner
   videoWait: off
 
@@ -62,9 +74,11 @@ mini-lights-out:
 
 outlaw:
   title: Outlaw
+  joy: "58796"
   videoWait: off
 
 br8kout:
+  joy: "58790"
   shiftVY: off
   resetVF: off
   incrementPtr: off
@@ -73,9 +87,11 @@ BadKaiJuJu:
   title: Bad KaiJuJu
 
 danm8ku:
+  joy: "58796"
   videoWait: off
 
 down8:
+  joy: "58795"
   videoWait: off
   clipSprites: off
 
@@ -89,9 +105,12 @@ bowling:
   videoWait: on
 
 cave:
+  joy: "2846f"
   videoWait: on
 
 rush_hour:
+  title: "Rush Hour"
+  joy: "5879a"
   videoWait: off
 
 filter:
@@ -108,6 +127,7 @@ merlin:
 
 pong1:
   title: Pong (1 player)
+  joys: "14000"
   videoWait: on
 
 pong2:
@@ -130,12 +150,14 @@ space_intercept:
   incrementPtr: off
 
 submarine:
+  joy: "00005"
   videoWait: on
   shiftVY: off
   resetVF: off
   incrementPtr: off
 
 ufo:
+  joy: "55465"
   videoWait: on
   shiftVY: off
   resetVF: off
@@ -143,8 +165,10 @@ ufo:
 
 3d-vipr-maze:
   title: 3D VIPr Maze
+  joy: "58790"
   videoWait: off
 
 knumberknower:
   title: Knumber Knower
+  joy: "79005"
   videoWait: off
