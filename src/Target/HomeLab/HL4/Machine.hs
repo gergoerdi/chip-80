@@ -11,10 +11,20 @@ import Z80.ZX0
 import Control.Monad
 
 -- | Pre: `IX` contains address of quirks settings followed by the compressed program
+-- | Pre: `IY` contains address of joystick settings
 machine_ :: Location -> Z80ASM
 machine_ baseAddr = mdo
     pageIO
 
+    -- Store joystick keys, reordering them to match HL-4 keyboard encoding
+    ldVia A [joyKeys + 1] [IY + 0]
+    ldVia A [joyKeys + 0] [IY + 1]
+    ldVia A [joyKeys + 3] [IY + 2]
+    ldVia A [joyKeys + 2] [IY + 3]
+    ldVia A [joyKeys + 4] [IY + 4]
+
+    -- Initialize CHIP-8 engine. This clobbers `IX`, and we'll need to
+    -- transfer it to `HL` before unpacking anyway.
     push IX
     call init
 
@@ -86,5 +96,6 @@ machine_ baseAddr = mdo
     drawSprite vidBuf
 
     -- Scan the keyboard and write its state to the 16 bytes starting at `keyBuf`
-    scanKeys <- labelled $ scanKeys_ keyBuf
+    scanKeys <- labelled $ scanKeys_ joyKeys keyBuf
+    joyKeys <- labelled $ db $ replicate 5 0x0
     pure ()

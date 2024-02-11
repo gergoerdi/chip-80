@@ -146,13 +146,20 @@ shell games logo = mdo
                 sla A
                 ld E A
 
-                ld HL progTable
-                add HL DE
-                ld C [HL]
-                inc HL
-                ld B [HL]
+                let derefTableBC table = do
+                        ld HL table
+                        add HL DE
+                        ld C [HL]
+                        inc HL
+                        ld B [HL]
+
+                derefTableBC progTable
                 push BC
                 pop IX
+
+                derefTableBC joyTable
+                push BC
+                pop IY
 
             call machine
 
@@ -209,11 +216,13 @@ shell games logo = mdo
     machine <- labelled $ machine_ baseAddr
 
     numProgs <- labelled $ db [fromIntegral $ length progs]
-    titleTable <- labelled $ dw [ title | (title, _) <- progs ]
-    progTable <- labelled $ dw [ prog | (_, prog) <- progs ]
+    titleTable <- labelled $ dw [ title | (title, _, _) <- progs ]
+    joyTable <- labelled $ dw [ joy | (_, joy, _) <- progs ]
+    progTable <- labelled $ dw [ prog | (_, _, prog) <- progs ]
 
     progs <- forM games \Game{..} -> do
         name <- labelled $ db $ (<> [0]) . take 16 . map (fromIntegral . ord . toUpper) $ gameTitle
+        joy <- labelled $ let (u, d, l, r, f) = gameJoy in db [u, d, l, r, f]
         prog <- labelled $ db $ encodeQuirks gameQuirks <> gameImage
-        pure (name, prog)
+        pure (name, joy, prog)
     pure ()

@@ -12,10 +12,11 @@ import Data.Function (on)
 
 -- | Scan the keyboard and write its state to the 16 bytes starting at `keyBuf`
 --   Post: Z flag iff the run/brk key was pressed
-scanKeys_ :: Location -> Z80ASM
-scanKeys_ keyBuf = do
+scanKeys_ :: Location -> Location -> Z80ASM
+scanKeys_ joyKeys keyBuf = mdo
     -- pageIO
 
+    -- Scan "normal" keypad
     forM_ sortedKeymap \(keys@((addr, _):_)) -> do
         ld A [addr]
         forM_ keys \(_, (i, value)) -> do
@@ -23,12 +24,36 @@ scanKeys_ keyBuf = do
             ld [HL] 0x00
             Z80.bit i A
             unlessFlag NZ $ dec [HL]
-    -- Check for CR
+
+    -- Scan joystick
+    ld D 0
+    ld IX joyKeys
+    -- Directions
+    ld A [0xe800]
+    decLoopB 4 $ call scanJoystickKey
+    -- Fire
+    ld A [0xe801]
+    call scanJoystickKey
+
+    -- Check for CR, set Z flag accordingly
     ld A [0xe801]
     Z80.bit 1 A
 
     -- pageRAM
     ret
+
+    scanJoystickKey <- labelled do
+            -- Which key does this stand for?
+            ld HL keyBuf
+            ld E [IX]
+            add HL DE
+            inc IX
+
+            rra
+            ret C
+            ld [HL] 0xff
+            ret
+    pure ()
   where
     sortedKeymap =
         groupBy ((==) `on` fst) . sortBy (compare `on` fst) $
