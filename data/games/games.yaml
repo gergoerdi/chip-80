@@ -11,6 +11,7 @@
   title: IBM Logo
   
 hidden:
+  joy: "28465"
   shiftVY: off
   resetVF: off
   incrementPtr: off
