@@ -188,23 +188,23 @@ cpu Platform{..} = mdo
             -- At this point, we have the freshly pressed key's index in `B`
 
             -- Write result
-            ld IX [keyAddr]
-            ld [IX] B
+            ld HL [keyAddr]
+            ld [HL] B
 
             -- Start waiting for the found key to be released
             ld C B
             ld B 0
-            ld IX keyBuf
-            add IX BC
-            ld [keyAddr] IX
+            ld HL keyBuf
+            add HL BC
+            ld [keyAddr] HL
 
             ldVia A [state] stateWAIT_RELEASE
             ret
 
         waitRelease <- labelled do
             traverse_ call readKeys
-            ld IX [keyAddr]
-            ld A [IX]
+            ld HL [keyAddr]
+            ld A [HL]
             Z80.and A
             ret NZ
 
@@ -249,10 +249,10 @@ cpu Platform{..} = mdo
 
             cp 0xe0
             unlessFlag NZ do -- ClearScreen
-                ld IX vidBuf
+                ld HL vidBuf
                 decLoopB 256 do
-                    ld [IX] 0
-                    inc IX
+                    ld [HL] 0
+                    inc HL
                 jp clearScreen
             cp 0xee
             ret NZ
@@ -375,7 +375,7 @@ cpu Platform{..} = mdo
             call loadVXtoA
             push IX
             call loadVYtoC
-            pop IX
+            pop DE
 
             -- Do the jump
             pop HL
@@ -395,31 +395,31 @@ cpu Platform{..} = mdo
                     ret
 
             mov_ <- labelled do
-                ld [IX] C
+                ldVia A [DE] C
                 ret
 
             or_ <- labelled do
                 Z80.or C
-                ld [IX] A
+                ld [DE] A
                 whenQuirk resetVF $ ldVia A [flag] 0
                 ret
             and_ <- labelled do
                 Z80.and C
-                ld [IX] A
+                ld [DE] A
                 whenQuirk resetVF $ ldVia A [flag] 0
                 ret
             xor_ <- labelled do
                 Z80.xor C
-                ld [IX] A
+                ld [DE] A
                 whenQuirk resetVF $ ldVia A [flag] 0
                 ret
             add_ <- labelled do
                 add A C
-                ld [IX] A
+                ld [DE] A
                 setFlagFromC
             sub_ <- labelled do
                 sub C
-                ld [IX] A
+                ld [DE] A
                 setFlagFromNC
             subFlip_ <- labelled do
                 ld B A
@@ -430,12 +430,12 @@ cpu Platform{..} = mdo
             shiftRight_ <- labelled do
                 whenQuirk shiftVY $ ld A C
                 srl A
-                ld [IX] A
+                ld [DE] A
                 setFlagFromC
             shiftLeft_ <- labelled do
                 whenQuirk shiftVY $ ld A C
                 sla A
-                ld [IX] A
+                ld [DE] A
                 setFlagFromC
 
             funs <- labelled $ dw
@@ -640,10 +640,10 @@ cpu Platform{..} = mdo
             traverse_ call readKeys
             ld D 0
             ld E A
-            ld IX keyBuf
-            add IX DE
+            ld HL keyBuf
+            add HL DE
 
-            ld A [IX]
+            ld A [HL]
             Z80.and A
             jp NZ pressed
 
