@@ -355,22 +355,29 @@ cpu Platform{..} = mdo
             ret
 
         op8 <- labelled mdo -- ALU
+            -- Load funs[C] into HL
             ld A C
             rla
             Z80.and 0b0001_1110
             ld H 0
             ld L A
+            ld DE funs
+            add HL DE
+
+            -- Load [HL] into DE
+            ld E [HL]
+            inc HL
+            ld D [HL]
+            push DE
+
+            -- ALU function arguments
             call loadVXtoA
             push IX
             call loadVYtoC
             pop IX
-            ld DE funs
-            add HL DE
 
-            ld E [HL]
-            inc HL
-            ld D [HL]
-            ex DE HL
+            -- Do the jump
+            pop HL
             code [0xe9] -- jp [HL]
 
             let setFlagFromC = do
