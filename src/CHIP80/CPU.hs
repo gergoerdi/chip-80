@@ -237,11 +237,13 @@ cpu Platform{..} = mdo
 
         ld D 0
         ld E A
-        ld IX ops
-        add IX DE
-        ld L [IX]
-        inc IX
-        ld H [IX]
+        ld HL ops
+        add HL DE
+        ld E [HL]
+        inc HL
+        ld D [HL]
+        push DE
+        pop HL
         code [0xe9] -- jp [HL]
 
         op0 <- labelled do
@@ -290,18 +292,18 @@ cpu Platform{..} = mdo
             ld [sp] HL
             jp op1
 
-        indexVXtoIX <- labelled do
+        indexVXtoHL <- labelled do
             ld A B
             Z80.and 0x0f
-            ld IX regs
+            ld HL regs
             ld D 0
             ld E A
-            add IX DE
+            add HL DE
             ret
 
         loadVXtoA <- labelled do
-            call indexVXtoIX
-            ld A [IX]
+            call indexVXtoHL
+            ld A [HL]
             ret
 
         loadVYtoC <- labelled do
@@ -309,11 +311,11 @@ cpu Platform{..} = mdo
             ld A C
             replicateM_ 4 rrca
             Z80.and 0x0f
-            ld IX regs
+            ld HL regs
             ld D 0
             ld E A
-            add IX DE
-            ld C [IX]
+            add HL DE
+            ld C [HL]
             pop AF
             ret
 
@@ -345,14 +347,14 @@ cpu Platform{..} = mdo
             ret
 
         op6 <- labelled do -- LoadImm vx imm
-            call indexVXtoIX
-            ld [IX] C
+            call indexVXtoHL
+            ld [HL] C
             ret
 
         op7 <- labelled do -- AddImm vx imm
             call loadVXtoA
             add A C
-            ld [IX] A
+            ld [HL] A
             ret
 
         op8 <- labelled mdo -- ALU
@@ -373,7 +375,7 @@ cpu Platform{..} = mdo
 
             -- ALU function arguments
             call loadVXtoA
-            push IX
+            push HL
             call loadVYtoC
             pop DE
 
@@ -491,14 +493,14 @@ cpu Platform{..} = mdo
             ret
 
         opC <- labelled do -- Randomize vx imm
-            call indexVXtoIX
+            call indexVXtoHL
             ld DE [rnd]
             call lfsr
             ld [rnd] DE
 
             ld A E
             Z80.and C
-            ld [IX] A
+            ld [HL] A
             ret
 
         opD <- labelled mdo -- DrawSprite vx vy n
@@ -740,8 +742,8 @@ cpu Platform{..} = mdo
                 pure ()
 
             getTimer <- labelled do -- GetTimer VX
-                call indexVXtoIX
-                ldVia A [IX] [timer]
+                call indexVXtoHL
+                ldVia A [HL] [timer]
                 ret
 
             loadTimer <- labelled do -- LoadTimer VX
@@ -767,8 +769,8 @@ cpu Platform{..} = mdo
                 ret
 
             waitKey <- labelled do -- WaitKey VX
-                call indexVXtoIX
-                ld [keyAddr] IX
+                call indexVXtoHL
+                ld [keyAddr] HL
 
                 -- Initialize `prevKeyBuf`
                 traverse_ call readKeys
