@@ -504,10 +504,12 @@ cpu Platform{..} = mdo
         opD <- labelled mdo -- DrawSprite vx vy n
             ldVia A [flag] 0 -- We'll overwrite this with 1 if we find a collision
 
-            -- Evaluate VX clamped to 0..63 into `A`
+            -- Store sprite height for later
             ld A C
             Z80.and 0x0f
-            ld H A
+            ld [spriteHeight] A
+
+            -- Evaluate VX clamped to 0..63 into `A`
             call loadVXtoA
             Z80.and 0x3f
 
@@ -517,9 +519,9 @@ cpu Platform{..} = mdo
             ld A C
             Z80.and 0x1f
             ld C A
-            pop AF
 
-            ld B H
+            ldVia A B [spriteHeight]
+            pop AF
 
             -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
             call spritePre
@@ -604,6 +606,7 @@ cpu Platform{..} = mdo
 
             ret
 
+            spriteHeight <- labelled $ db [0]
             nextRow <- labelled $ db [0]
             drawSecondByte <- labelled do
                 -- Horizontal wrap-around
