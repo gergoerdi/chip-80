@@ -420,12 +420,11 @@ cpu Platform{..} = mdo
                 sub C
                 ld [IX] A
                 setFlagFromNC
-            subNeg_ <- labelled do
-                ld D A
+            subFlip_ <- labelled do
+                ld B A
                 ld A C
-                sub D
-                ld [IX] A
-                setFlagFromNC
+                ld C B
+                jp sub_
 
             shiftRight_ <- labelled do
                 whenQuirk shiftVY $ ld A C
@@ -446,7 +445,7 @@ cpu Platform{..} = mdo
               , add_
               , sub_
               , shiftRight_
-              , subNeg_
+              , subFlip_
               , 0x0000
               , 0x0000
               , 0x0000
