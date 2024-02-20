@@ -540,13 +540,17 @@ cpu Platform{..} = mdo
             -- Calculate sub-byte bit offset
             Z80.and 0b111
 
-            ld IX [ptr]
+            push HL
+            ld HL [ptr]
             ld DE baseAddr
-            add IX DE
+            add HL DE
+            ex DE HL
+            pop HL
 
             let pixelByte :: (Load A r) => r -> Z80ASM
                 pixelByte r = do
                     -- Load pixel data from [vidBuf + HL] into D
+                    push DE
                     push HL
                     -- `HL += vidBuf`
                     ld DE vidBuf
@@ -564,8 +568,9 @@ cpu Platform{..} = mdo
                     ld [HL] A
 
                     pop HL
+                    pop DE
 
-            -- `IX`: source (sprite data)
+            -- `DE`: source (sprite data)
             -- `HL`: target (video buffer)
             skippable \clipVertical -> withLabel \loopRow -> do
                 whenQuirk clipSprites do
@@ -580,8 +585,10 @@ cpu Platform{..} = mdo
                 push AF
                 push BC
 
-                ld B [IX]
-                inc IX
+                ld C A
+                ldVia A B [DE]
+                ld A C
+                inc DE
                 ld C 0
 
                 skippable \end -> loopForever do
