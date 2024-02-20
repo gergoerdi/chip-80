@@ -22,7 +22,7 @@ data Platform = Platform
     }
 
 data CPU = CPU
-    { init :: Location -- ^ Pre: `IX` contains address of quirks settings
+    { init :: Location -- ^ Pre: `HL` contains address of quirks settings
     , resetCPU :: Location
     , newFrame :: Location
     , stepCPU :: Location
@@ -69,24 +69,24 @@ cpu Platform{..} = mdo
         ld DE baseAddr
         ld A 0
         decLoopB 16 do
-            push BC
+            ld C B
             decLoopB 256 do
                 ld [DE] A
                 inc DE
-            pop BC
+            ld B C
 
         -- Load hex font into baseAddr..+0x080
+        push HL
         ld DE baseAddr
         ld HL hex
         ld BC $ 16 * 8
         ldir
+        pop HL
 
         -- Load quirks
-        ldVia A [shiftVY] [IX + 0]
-        ldVia A [resetVF] [IX + 1]
-        ldVia A [incrementPtr] [IX + 2]
-        ldVia A [videoWait] [IX + 3]
-        ldVia A [clipSprites] [IX + 4]
+        forM_ [shiftVY, resetVF, incrementPtr, videoWait, clipSprites] \quirk -> do
+            ldVia A [quirk] [HL]
+            inc HL
 
         jp clearScreen
 

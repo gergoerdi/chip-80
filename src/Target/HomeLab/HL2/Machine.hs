@@ -9,14 +9,14 @@ import Z80
 import Z80.Utils
 import Z80.ZX0
 
--- | Pre: `IX` contains address of quirks settings followed by the compressed program
+-- | Pre: `HL` contains address of quirks settings followed by the compressed program
 machine_ :: Location -> Z80ASM
 machine_ baseAddr = mdo
-    push IX
+    push HL
     call init
+    pop HL
 
     -- Uncompress program into CHIP-8 RAM
-    pop HL
     ld DE 5 -- Skip 5 bytes of quirks
     add HL DE
 

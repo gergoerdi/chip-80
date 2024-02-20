@@ -117,9 +117,10 @@ shell games logo = mdo
             inc HL
             ld B [HL]
             push BC
-            pop IX
 
             call drawUI
+
+            pop HL
             call machine
 
     -- TODO: share this with rest of the code

@@ -155,11 +155,12 @@ shell games logo = mdo
 
                 derefTableBC progTable
                 push BC
-                pop IX
 
                 derefTableBC joyTable
                 push BC
+
                 pop IY
+                pop HL
 
             call machine
 
