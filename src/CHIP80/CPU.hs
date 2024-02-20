@@ -546,22 +546,21 @@ cpu Platform{..} = mdo
 
             let pixelByte :: (Load A r) => r -> Z80ASM
                 pixelByte r = do
+                    -- Load pixel data from [vidBuf + HL] into D
                     push HL
                     -- `HL += vidBuf`
-                    push DE
                     ld DE vidBuf
                     add HL DE
-                    pop DE
+                    ld D [HL]
 
                     -- Check collision
-                    ld C [HL]
                     ld A r
-                    Z80.and C
+                    Z80.and D
                     unlessFlag Z $ ldVia A [flag] (1 :: Word8)
 
                     -- Draw pixels
                     ld A r
-                    Z80.xor C
+                    Z80.xor D
                     ld [HL] A
 
                     pop HL
@@ -571,33 +570,35 @@ cpu Platform{..} = mdo
             skippable \clipVertical -> withLabel \loopRow -> do
                 whenQuirk clipSprites do
                     -- Is `HL` now over line 31?
-                    ld E A
+                    ld C A
                     ld A H
                     cp 1
                     jp NC clipVertical
-                    ld A E
+                    ld A C
                 ld H 0
 
                 push AF
+                push BC
 
-                ld D [IX]
-
-                ld E 0
+                ld B [IX]
                 inc IX
+                ld C 0
+
                 skippable \end -> loopForever do
                     cp 0
                     jp Z end
-                    srl D
-                    rr E
+                    srl B
+                    rr C
                     dec A
 
-                pixelByte D
+                pixelByte B
                 call drawSecondByte
 
-                ld D 0
-                ldVia A E [nextRow]
-                add HL DE
+                ld B 0
+                ldVia A C [nextRow]
+                add HL BC
 
+                pop BC
                 pop AF
                 djnz loopRow
             call spritePost
@@ -632,7 +633,7 @@ cpu Platform{..} = mdo
                               sub 8
                               ld L A
                               ldVia A [nextRow] (7 + 8))
-                pixelByte E
+                pixelByte C
                 ret
             pure ()
 
