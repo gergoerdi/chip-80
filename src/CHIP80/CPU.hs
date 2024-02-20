@@ -44,12 +44,14 @@ cpu Platform{..} = mdo
         flag = regs + 0xf -- VF
         stack = flag + 1
         sp = stack + 24
-        timer = sp + 2
+        pc = sp + 2
+        timer = pc + 2
         state = timer + 1
         waitForFrame = state + 1
+        lastVar = waitForFrame
 
     -- All this needs to fit inside the first 0x200 bytes from `baseAddr`
-    unless (waitForFrame < baseAddr + 0x200) $ error "CHIP-8 CPU state doesn't fit"
+    unless (lastVar < baseAddr + 0x200) $ error "CHIP-8 CPU state doesn't fit"
 
     quirks@Quirks{..} <- do
         shiftVY <- labelled $ db [1]
@@ -110,7 +112,7 @@ cpu Platform{..} = mdo
         ldVia A [sp] stackLo
         ldVia A [sp + 1] stackHi
 
-        ld IY $ baseAddr + 0x200
+        ldVia DE [pc] $ baseAddr + 0x200
         ret
 
     newFrame <- labelled do
@@ -125,7 +127,6 @@ cpu Platform{..} = mdo
         ld [timer] A
         ret
 
-    -- | `IY`: PC
     stepCPU <- labelled mdo
         let checkQuirk quirk = do
                 push HL
@@ -217,14 +218,16 @@ cpu Platform{..} = mdo
         ret NZ
 
         -- Fetch next instruction into B and C
-        ld B [IY]
-        inc IY
+        ld HL [pc]
+        ld B [HL]
+        inc HL
 
         -- ld A B
         -- dbgA
 
-        ld C [IY]
-        inc IY
+        ld C [HL]
+        inc HL
+        ld [pc] HL
 
         -- ld A C
         -- dbgA
@@ -266,8 +269,7 @@ cpu Platform{..} = mdo
             dec HL
             ld E [HL]
             ld [sp] HL
-            push DE
-            pop IY
+            ld [pc] DE
             ret
 
         op1 <- labelled do -- Jump
@@ -277,14 +279,12 @@ cpu Platform{..} = mdo
             ld L C
             ld DE baseAddr
             add HL DE
-            push HL
-            pop IY
+            ld [pc] HL
             ret
 
         op2 <- labelled do -- Call
             ld HL [sp]
-            push IY
-            pop DE
+            ld DE [pc]
             ld [HL] E
             inc HL
             ld [HL] D
@@ -320,8 +320,10 @@ cpu Platform{..} = mdo
             ret
 
         skip <- labelled do
+            ld HL [pc]
             ld DE 2
-            add IY DE
+            add HL DE
+            ld [pc] HL
             ret
 
         op3 <- labelled do -- SkipEqImm vx imm
@@ -488,8 +490,9 @@ cpu Platform{..} = mdo
             Z80.and 0x0f
             ld D A
 
-            ld IY baseAddr
-            add IY DE
+            ld HL baseAddr
+            add HL DE
+            ld [pc] HL
             ret
 
         opC <- labelled do -- Randomize vx imm
