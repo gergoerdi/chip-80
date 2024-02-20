@@ -67,7 +67,7 @@ withGamesFrom dir = do
             pop BC
         pageRAM
 
-        ld IX quirks
+        ld HL quirks
         ld IY prog
         call machine
 

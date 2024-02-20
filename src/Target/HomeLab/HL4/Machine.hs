@@ -10,7 +10,7 @@ import Z80.Utils
 import Z80.ZX0
 import Control.Monad
 
--- | Pre: `IX` contains address of quirks settings followed by the compressed program
+-- | Pre: `HL` contains address of quirks settings followed by the compressed program
 -- | Pre: `IY` contains address of joystick settings
 machine_ :: Location -> Z80ASM
 machine_ baseAddr = mdo
@@ -23,13 +23,12 @@ machine_ baseAddr = mdo
     ldVia A [joyKeys + 2] [IY + 3]
     ldVia A [joyKeys + 4] [IY + 4]
 
-    -- Initialize CHIP-8 engine. This clobbers `IX`, and we'll need to
-    -- transfer it to `HL` before unpacking anyway.
-    push IX
+    -- Initialize CHIP-8 engine. This clobbers `HL`, so we save it first
+    push HL
     call init
+    pop HL
 
     -- Uncompress program into CHIP-8 RAM
-    pop HL
     ld DE 5 -- skip 5 bytes of quirks
     add HL DE
 

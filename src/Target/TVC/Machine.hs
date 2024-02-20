@@ -12,7 +12,7 @@ import Z80.Utils
 windowStart :: Location
 windowStart = (videoStart + 32 * 64)
 
--- | Pre: `IX` contains address of quirks settings
+-- | Pre: `HL` contains address of quirks settings
 -- | Pre: `IY` contains address of compressed program
 machine_ :: Location -> Z80ASM
 machine_ baseAddr = mdo
