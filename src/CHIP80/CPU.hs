@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module CHIP80.CPU where
 
 import Z80
@@ -539,6 +540,27 @@ cpu Platform{..} = mdo
             ld DE baseAddr
             add IX DE
 
+            let pixelByte :: (Load A r) => r -> Z80ASM
+                pixelByte r = do
+                    push HL
+                    push DE
+                    ld DE vidBuf
+                    add HL DE
+                    pop DE
+
+                    -- Check collision
+                    ld C [HL]
+                    ld A r
+                    Z80.and C
+                    unlessFlag Z $ ldVia A [flag] (1 :: Word8)
+
+                    -- Draw pixels
+                    ld A r
+                    Z80.xor C
+                    ld [HL] A
+
+                    pop HL
+
             -- `IX`: source (sprite data)
             -- `HL`: target (video buffer)
             skippable \clipVertical -> withLabel \loopRow -> do
@@ -564,25 +586,7 @@ cpu Platform{..} = mdo
                     rr E
                     dec A
 
-                push HL
-                push DE
-                ld DE vidBuf
-                add HL DE
-                pop DE
-
-                -- Check collision
-                ld C [HL]
-                ld A D
-                Z80.and C
-                unlessFlag Z $ ldVia A [flag] 1
-
-                -- Draw pixels
-                ld A D
-                Z80.xor C
-                ld [HL] A
-
-                pop HL
-
+                pixelByte D
                 call drawSecondByte
 
                 ld D 0
@@ -622,25 +626,7 @@ cpu Platform{..} = mdo
                               sub 8
                               ld L A
                               ldVia A [nextRow] (7 + 8))
-
-                push HL
-                push DE
-                ld DE vidBuf
-                add HL DE
-                pop DE
-
-                -- Check collision
-                ld C [HL]
-                ld A E
-                Z80.and C
-                unlessFlag Z $ ldVia A [flag] 1
-
-                -- Draw pixels
-                ld A E
-                Z80.xor C
-                ld [HL] A
-
-                pop HL
+                pixelByte E
                 ret
             pure ()
 
