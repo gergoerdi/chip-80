@@ -20,8 +20,7 @@ renderToTiles vidbuf = do
             -- Copy one byte into [DE]
             ld B 8
             withLabel \loop -> do
-                ld A [HL]
-                inc HL
+                ld A [HLi]
                 ld [DE] A
                 inc DE
                 ld [DE] A
