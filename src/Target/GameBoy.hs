@@ -40,16 +40,16 @@ emit = do
                     Z80.or C
                     jp NZ loop
 
-            -- Tile definitions
-            ld DE 0x9000
-            ld HL tiles
-            ld BC $ 64 `div` 8 * 32 `div` 8 * 16
-            copyHLtoDE
-            ld DE $ 0x9000 + 16 * 255
-            ld A 0x00
-            replicateM_ 16 do
-                ld [DE] A
-                inc DE
+            -- Initialize tiles to empty
+            ld HL 0x9000
+            ld BC 0x800
+            withLabel \loop -> do
+                ld A 0x00
+                ld [HLi] A
+                dec BC
+                ld A 0x98
+                cp H
+                jp NZ loop
 
             -- Tilemap
             ld DE 0x9800
@@ -104,7 +104,6 @@ emit = do
                 -- ldhVia A [0x40] 0b1000_0001
 
 
-            tiles <- labelled $ dw $ replicate (64 `div` 8 * 32 `div` 8 * 8) 0b0000_0000_0000_0000
             picdata <- labelled $ db $ mconcat picture
             let vidbuf = 0xc000
             pure ()
