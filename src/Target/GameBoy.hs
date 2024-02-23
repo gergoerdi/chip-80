@@ -33,9 +33,8 @@ emit = do
             ldhVia A [0x40] 0b0000_0000
 
             let copyHLtoDE = withLabel \loop -> do
-                    ldVia A [DE] [HL] -- TODO: [HLi]
+                    ldVia A [DE] [HLi]
                     inc DE
-                    inc HL
                     dec BC
                     ld A B
                     Z80.or C
