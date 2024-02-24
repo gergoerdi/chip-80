@@ -4,6 +4,7 @@ import Target.GameBoy.Operations
 import Z80 hiding (decLoopB)
 import Z80.Utils
 import Data.Word
+import Control.Monad (replicateM_)
 
 decLoopB :: Word8 -> Z80ASM -> Z80ASM
 decLoopB n body = do
@@ -38,33 +39,51 @@ renderToTiles vidbuf tilebuf = do
     ld HL tilebuf
     ld DE vidbuf
 
-    -- Copy 4 8-row units
-    decLoopC 4 do
-        -- Copy 8 rows
+    -- 8 rows of tiles
+    decLoopC 8 do
+        -- 8 pixel lines per tile
         decLoopB 8 do
             push BC
 
-            -- Copy one byte into [HL]
-            decLoopB 8 do
+            -- 8 double tiles per row
+            decLoopC 8 do
+                push BC
+
                 ld A [DE]
                 inc DE
-                ld [HLi] A
 
-                -- Add 7 to DE
-                ld A L
-                add A 7
-                ld L A
-                unlessFlag NC $ inc H
+                replicateM_ 2 do
+                    -- Spread high nybble into C
+                    ld C 0
+                    decLoopB 4 do
+                        rla
+                        push AF
+                        rl C
+                        pop AF
+                        rl C
 
-            -- Jump to next row
+                    push AF
+                    ldVia A [HL] C
+
+                    -- Add 16 to DE to jump to next tile
+                    ld A L
+                    add A 8
+                    ld L A
+                    unlessFlag NC $ inc H
+                    pop AF
+
+                pop BC
+
+            -- End of row: go back to second line of first tile
             ld A L
-            sub (64 - 1)
+            sub (128 - 1)
             ld L A
             unlessFlag NC $ dec H
 
             pop BC
 
+        -- End of tile row: go to first line of next row
         ld A L
-        add A (64 - 8)
+        add A (128 - 8)
         ld L A
         unlessFlag NC $ inc H

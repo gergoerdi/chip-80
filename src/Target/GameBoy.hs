@@ -60,8 +60,8 @@ emit = do
             -- Tilemap
             ld HL 0x9800
             ld A 0x00
-            decLoopC 4 do
-                let cols = 8
+            decLoopC 8 do
+                let cols = 16
 
                 decLoopB cols do
                     ld [HLi] A
