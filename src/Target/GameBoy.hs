@@ -1,7 +1,7 @@
 module Target.GameBoy where
 
 import Target.GameBoy.Operations
-import Z80
+import Z80 hiding (decLoopB)
 import Z80.Utils
 
 import Target.GameBoy.Video
@@ -53,51 +53,30 @@ emit = do
 
             -- TEMP: Set empty tile to a pattern for debugging
             ld A 0b1100_1100
-            ld C 16
             ld HL $ 0x8800
-            withLabel \loop -> do
+            decLoopB 16 do
                 ld [HLi] A
-                dec C
-                jp NZ loop
 
             -- Tilemap
             ld HL 0x9800
             ld A 0x00
-            ld C 4
-            withLabel \loopRow -> do
+            decLoopC 4 do
                 let cols = 8
 
-                ld B cols
-                withLabel \loopCol -> do
+                decLoopB cols do
                     ld [HLi] A
                     inc A
 
-                    dec B
-                    jp NZ loopCol
-
                 push AF
-                ld B (32 - cols)
                 ld A 0x80
-                withLabel \loop -> do
+                decLoopB (32 - cols) do
                     ld [HLi] A
-
-                    dec B
-                    jp NZ loop
                 pop AF
 
-                dec C
-                jp NZ loopRow
-
-            ld C (32 - 4)
             ld A 0x80
-            withLabel \loop -> do
-                ld B 32
-                withLabel \loop -> do
+            decLoopC (32 - 4) do
+                decLoopB 32 do
                     ld [HLi] A
-                    dec B
-                    jp NZ loop
-                dec C
-                jp NZ loop
 
             -- Reset scrolling
             ldhVia A [0x43] 0

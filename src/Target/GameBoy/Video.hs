@@ -1,8 +1,25 @@
 module Target.GameBoy.Video where
 
 import Target.GameBoy.Operations
-import Z80
+import Z80 hiding (decLoopB)
 import Z80.Utils
+import Data.Word
+
+decLoopB :: Word8 -> Z80ASM -> Z80ASM
+decLoopB n body = do
+    ld B n
+    withLabel \loop -> do
+        body
+        dec B
+        jp NZ loop
+
+decLoopC :: Word8 -> Z80ASM -> Z80ASM
+decLoopC n body = do
+    ld C n
+    withLabel \loop -> do
+        body
+        dec C
+        jp NZ loop
 
 renderToTiles :: Location -> Z80ASM
 renderToTiles vidbuf = do
@@ -10,16 +27,13 @@ renderToTiles vidbuf = do
     ld HL vidbuf
 
     -- Copy 4 8-row units
-    ld C 4
-    withLabel \loop -> do
+    decLoopC 4 do
         -- Copy 8 rows
-        ld B 8
-        withLabel \loop -> do
+        decLoopB 8 do
             push BC
 
             -- Copy one byte into [DE]
-            ld B 8
-            withLabel \loop -> do
+            decLoopB 8 do
                 ld A [HLi]
                 ld [DE] A
                 inc DE
@@ -31,9 +45,6 @@ renderToTiles vidbuf = do
                 ld E A
                 unlessFlag NC $ inc D
 
-                dec B
-                jp NZ loop
-
             -- Jump to next row
             ld A E
             sub (128 - 2)
@@ -41,13 +52,8 @@ renderToTiles vidbuf = do
             unlessFlag NC $ dec D
 
             pop BC
-            dec B
-            jp NZ loop
 
         ld A E
         add A (128 - 16)
         ld E A
         unlessFlag NC $ inc D
-
-        dec C
-        jp NZ loop
