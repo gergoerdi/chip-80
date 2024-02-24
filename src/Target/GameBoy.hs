@@ -51,26 +51,35 @@ emit = do
                 cp H
                 jp NZ loop
 
+            -- TEMP: Set empty tile to a pattern for debugging
+            ld A 0b1100_1100
+            ld C 16
+            ld HL $ 0x8800
+            withLabel \loop -> do
+                ld [HLi] A
+                dec C
+                jp NZ loop
+
             -- Tilemap
-            ld DE 0x9800
+            ld HL 0x9800
             ld A 0x00
-            ld C 32
+            ld C 4
             withLabel \loopRow -> do
-                ld B 8
+                let cols = 8
+
+                ld B cols
                 withLabel \loopCol -> do
-                    ld [DE] A
-                    inc DE
+                    ld [HLi] A
                     inc A
 
                     dec B
                     jp NZ loopCol
 
                 push AF
-                ld A 0xff
-                ld B (32 - 8)
+                ld B (32 - cols)
+                ld A 0x80
                 withLabel \loop -> do
-                    ld [DE] A
-                    inc DE
+                    ld [HLi] A
 
                     dec B
                     jp NZ loop
@@ -78,6 +87,17 @@ emit = do
 
                 dec C
                 jp NZ loopRow
+
+            ld C (32 - 4)
+            ld A 0x80
+            withLabel \loop -> do
+                ld B 32
+                withLabel \loop -> do
+                    ld [HLi] A
+                    dec B
+                    jp NZ loop
+                dec C
+                jp NZ loop
 
             -- Reset scrolling
             ldhVia A [0x43] 0
