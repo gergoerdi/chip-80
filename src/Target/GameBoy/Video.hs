@@ -23,8 +23,8 @@ decLoopC n body = do
 
 renderToTiles :: Location -> Z80ASM
 renderToTiles vidbuf = do
-    ld DE 0x9000
-    ld HL vidbuf
+    ld HL 0x9000
+    ld DE vidbuf
 
     -- Copy 4 8-row units
     decLoopC 4 do
@@ -32,28 +32,27 @@ renderToTiles vidbuf = do
         decLoopB 8 do
             push BC
 
-            -- Copy one byte into [DE]
+            -- Copy one byte into [HL]
             decLoopB 8 do
-                ld A [HLi]
-                ld [DE] A
+                ld A [DE]
                 inc DE
-                ld [DE] A
+                ld [HLi] A
 
                 -- Add 15 to DE
-                ld A E
+                ld A L
                 add A 15
-                ld E A
-                unlessFlag NC $ inc D
+                ld L A
+                unlessFlag NC $ inc H
 
             -- Jump to next row
-            ld A E
+            ld A L
             sub (128 - 2)
-            ld E A
-            unlessFlag NC $ dec D
+            ld L A
+            unlessFlag NC $ dec H
 
             pop BC
 
-        ld A E
+        ld A L
         add A (128 - 16)
-        ld E A
-        unlessFlag NC $ inc D
+        ld L A
+        unlessFlag NC $ inc H
