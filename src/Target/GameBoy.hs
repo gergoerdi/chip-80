@@ -63,9 +63,9 @@ emit = do
             -- Tilemap
             ld HL 0x9800
             ld A 0x00
-            ld C 4
+            ld C 8
             withLabel \loopRow -> do
-                let cols = 8
+                let cols = 16
 
                 ld B cols
                 withLabel \loopCol -> do
@@ -76,8 +76,9 @@ emit = do
                     jp NZ loopCol
 
                 push AF
-                ld B (32 - cols)
+
                 ld A 0x80
+                ld B (32 - cols)
                 withLabel \loop -> do
                     ld [HLi] A
 
