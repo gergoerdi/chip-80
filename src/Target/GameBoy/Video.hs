@@ -1,29 +1,49 @@
 module Target.GameBoy.Video where
 
 import Target.GameBoy.Operations
-import Z80
+import Z80 hiding (decLoopB)
 import Z80.Utils
+import Data.Word
 import Control.Monad (replicateM_)
+
+decLoopB :: Word8 -> Z80ASM -> Z80ASM
+decLoopB n body = do
+    ld B n
+    withLabel \loop -> do
+        body
+        dec B
+        jp NZ loop
+
+decLoopC :: Word8 -> Z80ASM -> Z80ASM
+decLoopC n body = do
+    ld C n
+    withLabel \loop -> do
+        body
+        dec C
+        jp NZ loop
 
 renderToTiles :: Location -> Z80ASM
 renderToTiles vidbuf = do
-    ld DE 0x9000
-    ld HL vidbuf
+    ld HL 0x9000
+    ld DE vidbuf
 
-    -- 8 rows of tiles
-    ld C 8
-    withLabel \loop -> do
+    -- 4 double rows of tiles
+    decLoopC 4 do
         -- 8 pixel lines per tile
         ld B 8
+
+        push HL
         withLabel \loop -> do
             push BC
 
+            push HL
+
             -- 8 double tiles per row
-            ld C 8
-            withLabel \loop -> do
+            decLoopC 8 do
                 push BC
 
-                ld A [HLi]
+                ld A [DE]
+                inc DE
 
                 replicateM_ 2 do
                     -- Spread high nybble into C
@@ -40,34 +60,30 @@ renderToTiles vidbuf = do
                         jp NZ loop
 
                     push AF
-                    ldVia A [DE] C
+                    ld A C
+                    ld [HLi] A
+                    inc HL
+                    ld [HL] A
 
-                    -- Add 16 to DE to jump to next tile
-                    ld A E
-                    add A 16
-                    ld E A
-                    unlessFlag NC $ inc D
+                    -- Add 14 to HL to jump to next tile
+                    ld A L
+                    add A (32 - 2)
+                    ld L A
+                    unlessFlag NC $ inc H
                     pop AF
 
                 pop BC
-                dec C
-                jp NZ loop
 
-            -- End of row: go back to second line of first tile
-            ld A E
-            sub 254
-            ld E A
-            unlessFlag NC $ dec D
+            -- End of row: go back to next line of first tile
+            pop HL
+            replicateM_ 4 $ inc HL
 
             pop BC
             dec B
             jp NZ loop
 
         -- End of tile row: go to first line of next row
-        ld A E
-        add A (256 - 16)
-        ld E A
-        unlessFlag NC $ inc D
-
-        dec C
-        jp NZ loop
+        pop HL
+        ld A H
+        add A 0x02
+        ld H A

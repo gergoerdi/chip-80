@@ -1,7 +1,7 @@
 module Target.GameBoy where
 
 import Target.GameBoy.Operations
-import Z80
+import Z80 hiding (decLoopB)
 import Z80.Utils
 
 import Target.GameBoy.Video
@@ -63,42 +63,31 @@ emit = do
             -- Tilemap
             ld HL 0x9800
             ld A 0x00
-            ld C 8
-            withLabel \loopRow -> do
-                let cols = 16
+            decLoopC 4 do
+                replicateM_ 2 do
+                    push AF
 
-                ld B cols
-                withLabel \loopCol -> do
-                    ld [HLi] A
+                    let cols = 16
+                    decLoopB cols do
+                        ld [HLi] A
+                        inc A
+                        inc A
+
+                    ld A 0x80
+                    decLoopB (32 - cols) do
+                        ld [HLi] A
+
+                    pop AF
                     inc A
+                add A 30
 
-                    dec B
-                    jp NZ loopCol
-
-                push AF
-
-                ld A 0x80
-                ld B (32 - cols)
-                withLabel \loop -> do
-                    ld [HLi] A
-
-                    dec B
-                    jp NZ loop
-                pop AF
-
-                dec C
-                jp NZ loopRow
-
-            ld C (32 - 4)
             ld A 0x80
-            withLabel \loop -> do
+            decLoopC (32 - 16) do
                 ld B 32
                 withLabel \loop -> do
                     ld [HLi] A
                     dec B
                     jp NZ loop
-                dec C
-                jp NZ loop
 
             -- Reset scrolling
             ldhVia A [0x43] 0
