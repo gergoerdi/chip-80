@@ -22,18 +22,28 @@ decLoopC n body = do
         dec C
         jp NZ loop
 
-renderToTiles :: Location -> Z80ASM
-renderToTiles vidbuf = do
-    ld HL 0x9000
+blitTiles :: Location -> Z80ASM
+blitTiles tilebuf = do
+    ld HL tilebuf
+    ld DE 0x9000
+
+    decLoopB 128 do
+        decLoopC 8 do
+            ld A [HLi]
+            ld [DE] A
+            inc DE
+            inc DE
+
+renderToTiles :: Location -> Location -> Z80ASM
+renderToTiles vidbuf tilebuf = do
+    ld HL tilebuf
     ld DE vidbuf
 
     -- 4 double rows of tiles
     decLoopC 4 do
-        -- 8 pixel lines per tile
-        ld B 8
-
         push HL
-        withLabel \loop -> do
+        -- 8 pixel lines per tile
+        decLoopB 8 do
             push BC
 
             push HL
@@ -62,12 +72,11 @@ renderToTiles vidbuf = do
                     push AF
                     ld A C
                     ld [HLi] A
-                    inc HL
-                    ld [HL] A
+                    ld [HLi] A
 
-                    -- Add 14 to HL to jump to next tile
+                    -- Jump to next tile
                     ld A L
-                    add A (32 - 2)
+                    add A (16 - 2)
                     ld L A
                     unlessFlag NC $ inc H
                     pop AF
@@ -76,14 +85,12 @@ renderToTiles vidbuf = do
 
             -- End of row: go back to next line of first tile
             pop HL
-            replicateM_ 4 $ inc HL
+            replicateM_ 2 $ inc HL
 
             pop BC
-            dec B
-            jp NZ loop
 
         -- End of tile row: go to first line of next row
         pop HL
         ld A H
-        add A 0x02
+        add A 0x01
         ld H A
