@@ -21,9 +21,21 @@ decLoopC n body = do
         dec C
         jp NZ loop
 
-renderToTiles :: Location -> Z80ASM
-renderToTiles vidbuf = do
-    ld HL 0x9000
+blitTiles :: Location -> Z80ASM
+blitTiles tilebuf = do
+    ld HL tilebuf
+    ld DE 0x9000
+
+    decLoopB 128 do
+        decLoopC 8 do
+            ld A [HLi]
+            ld [DE] A
+            inc DE
+            inc DE
+
+renderToTiles :: Location -> Location -> Z80ASM
+renderToTiles vidbuf tilebuf = do
+    ld HL tilebuf
     ld DE vidbuf
 
     -- Copy 4 8-row units
@@ -38,21 +50,21 @@ renderToTiles vidbuf = do
                 inc DE
                 ld [HLi] A
 
-                -- Add 15 to DE
+                -- Add 7 to DE
                 ld A L
-                add A 15
+                add A 7
                 ld L A
                 unlessFlag NC $ inc H
 
             -- Jump to next row
             ld A L
-            sub (128 - 2)
+            sub (64 - 1)
             ld L A
             unlessFlag NC $ dec H
 
             pop BC
 
         ld A L
-        add A (128 - 16)
+        add A (64 - 8)
         ld L A
         unlessFlag NC $ inc H

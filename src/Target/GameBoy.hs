@@ -93,18 +93,21 @@ emit = do
 
             ldhVia A [0x47] 0b1110_0100
             loopForever do
-                pure ()
+                renderToTiles vidbuf tilebuf
+
                 withLabel \waitVBlank -> do
                     ldh A [0x44]
                     cp 144
                     jr NZ waitVBlank
+
                 -- ldhVia A [0x40] 0b0000_0000
-                renderToTiles vidbuf
+                blitTiles tilebuf
                 -- ldhVia A [0x40] 0b1000_0001
 
 
             picdata <- labelled $ db $ mconcat picture
             let vidbuf = 0xc000
+            let tilebuf = 0xd000
             pure ()
 
     let name = "_build/chip80-gameboy"
