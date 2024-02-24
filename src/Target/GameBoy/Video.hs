@@ -39,11 +39,15 @@ renderToTiles vidbuf tilebuf = do
     ld HL tilebuf
     ld DE vidbuf
 
-    -- 8 rows of tiles
-    decLoopC 8 do
+    -- 4 double rows of tiles
+    decLoopC 4 do
+        push HL
+
         -- 8 pixel lines per tile
         decLoopB 8 do
             push BC
+
+            push HL
 
             -- 8 double tiles per row
             decLoopC 8 do
@@ -63,27 +67,27 @@ renderToTiles vidbuf tilebuf = do
                         rl C
 
                     push AF
-                    ldVia A [HL] C
+                    ld A C
+                    ld [HLi] A
+                    ld [HL] A
 
-                    -- Add 16 to DE to jump to next tile
+                    -- Add 14 to HL to jump to next tile
                     ld A L
-                    add A 8
+                    add A (16 - 1)
                     ld L A
                     unlessFlag NC $ inc H
                     pop AF
 
                 pop BC
 
-            -- End of row: go back to second line of first tile
-            ld A L
-            sub (128 - 1)
-            ld L A
-            unlessFlag NC $ dec H
+            -- End of row: go back to next line of first tile
+            pop HL
+            replicateM_ 2 $ inc HL
 
             pop BC
 
         -- End of tile row: go to first line of next row
-        ld A L
-        add A (128 - 8)
-        ld L A
-        unlessFlag NC $ inc H
+        pop HL
+        ld A H
+        add A 0x01
+        ld H A

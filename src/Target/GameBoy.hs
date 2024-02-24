@@ -60,23 +60,31 @@ emit = do
             -- Tilemap
             ld HL 0x9800
             ld A 0x00
-            decLoopC 8 do
-                let cols = 16
+            decLoopC 4 do
+                replicateM_ 2 do
+                    push AF
 
-                decLoopB cols do
-                    ld [HLi] A
+                    let cols = 16
+                    decLoopB cols do
+                        ld [HLi] A
+                        inc A
+                        inc A
+
+                    ld A 0x80
+                    decLoopB (32 - cols) do
+                        ld [HLi] A
+
+                    pop AF
                     inc A
-
-                push AF
-                ld A 0x80
-                decLoopB (32 - cols) do
-                    ld [HLi] A
-                pop AF
+                add A 30
 
             ld A 0x80
-            decLoopC (32 - 4) do
-                decLoopB 32 do
+            decLoopC (32 - 16) do
+                ld B 32
+                withLabel \loop -> do
                     ld [HLi] A
+                    dec B
+                    jp NZ loop
 
             -- Reset scrolling
             ldhVia A [0x43] 0
