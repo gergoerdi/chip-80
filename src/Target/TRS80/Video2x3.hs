@@ -1,6 +1,7 @@
 module Target.TRS80.Video2x3 where
 
 import CHIP80.Video
+import Z80.Machine.TRS80.Defs
 
 import Z80
 import Z80.Utils
@@ -17,7 +18,47 @@ windowWidth :: Word16
 windowWidth = pictureWidth `div` 2
 
 windowHeight :: Word16
-windowHeight = pictureHeight `div` 3
+windowHeight = (pictureHeight + 3 - 1) `div` 3
+
+drawScreen :: Location -> Z80ASM
+drawScreen vidBuf = do
+    ld HL $ videoStart + (rowstride - windowWidth) `div` 2
+    ld IX vidBuf
+
+    decLoopB (fromIntegral windowHeight) do
+        ld C B
+        decLoopB (pictureWidth `div` 8) do
+            ld E B
+            decLoopB 4 do
+                ld D 0x00
+
+                -- Three rows at the same time
+                let row i = fromIntegral ((pictureWidth `div` 8) * i)
+                forM_ [0..2] \i -> do
+                    ld A [IX + row i]
+                    rlca
+                    rr D
+                    rlca
+                    rr D
+                    ld [IX + row i] A
+                srl D
+                srl D
+
+                ld A D
+                Z80.or 0x80
+
+                ld [HL] A
+                inc HL
+            ld B E
+            inc IX
+        ld B C
+
+        ld DE $ (pictureWidth `div` 8) * 2
+        add IX DE
+
+        ld DE $ rowstride - windowWidth
+        add HL DE
+
 
 encodeFromPng :: [Word8] -> BS.ByteString -> (Word8, Word8, [Word8])
 encodeFromPng blocks bs = (byteWidth, byteHeight, bytes)
