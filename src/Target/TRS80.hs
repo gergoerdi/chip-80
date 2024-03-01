@@ -4,7 +4,9 @@ import Z80
 import Z80.Utils
 import Z80.Machine.TRS80.Defs
 import Z80.Machine.TRS80.Cas
+
 import Target.TRS80.Video2x3
+import Target.TRS80.Input
 
 import CHIP80.Video
 
@@ -37,6 +39,11 @@ emit = do
                 ex DE HL
                 pop BC
 
+            -- Wait for Break key
+            withLabel \loop -> do
+                call scanKeys
+                jp NZ loop
+
             drawScreen vidBuf
 
             -- Debug heartbeat
@@ -45,10 +52,13 @@ emit = do
                 ld [HL] A
                 inc A
 
+            scanKeys <- labelled $ scanKeys_ keyBuf
+
             let (logoWidth, logoHeight, logoBytes) = encodeFromPng blockChars logo
             logoData <- labelled $ db logoBytes
 
             vidBuf <- labelled $ db testPicture
+            keyBuf <- labelled $ db $ replicate 16 0x00
             pure ()
 
     let name = "_build/chip80-trs80"
