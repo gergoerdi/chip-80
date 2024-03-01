@@ -17,6 +17,7 @@ dependencies:
   - aeson
   - text
   - JuicyPixels
+  - extra
 
 default-extensions:
   - BinaryLiterals
