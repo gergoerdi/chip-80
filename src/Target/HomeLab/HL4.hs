@@ -2,6 +2,7 @@ module Target.HomeLab.HL4 where
 
 import Target.HomeLab.HL4.Shell
 import Target.HomeLab.HL4.HTP
+import qualified Z80.Machine.HomeLab.HTP as HTP
 
 import Z80
 
@@ -17,4 +18,6 @@ emit = do
 
     createDirectoryIfMissing True (takeDirectory name)
     BS.writeFile (name <.> "obj") $ asmData prog
-    BS.writeFile (name <.> "htp") $ htpWithAutoStart (fromString $ takeBaseName name) prog
+    let htp = htpWithAutoStart (fromString $ takeBaseName name) prog
+    BS.writeFile (name <.> "htp") htp
+    HTP.renderToWav (name <.> "wav") htp
