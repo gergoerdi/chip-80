@@ -14,57 +14,61 @@ import System.FilePath
 import System.Directory
 import Data.Word
 
+withHeader :: Z80ASM -> ASMBlock
+withHeader prog = org 0x0100 mdo
+    jp start
+
+    -- Pad to 4 bytes before header
+    db [0x00]
+
+    -- Header
+    db $ take (0x050 - 4) . (<> repeat 0x00) . mconcat $
+        -- Boot logo
+        [ [ 0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c, 0x00, 0x0d
+          , 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6, 0xdd, 0xdd, 0xd9, 0x99
+          , 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e
+          ]
+        -- Game title
+        , replicate 16 0x00
+
+        -- New licensee code
+        , [ 0x00, 0x00 ]
+
+        -- SGB flag
+        , [ 0x00 ]
+
+        -- Cartridge type
+        , [ 0x00 ]
+
+        -- ROM size
+        , [ 0x00 ]
+
+        -- RAM size
+        , [ 0x00 ]
+
+        -- Destination code
+        , [ 0x00 ]
+
+        -- Old licensee code
+        , [ 0x00 ]
+
+        -- Mask ROM version number
+        , [ 0x00 ]
+
+        -- TODO: header checksum
+        , [ 0xe7 ]
+
+        -- TODO: global checksum
+        , [ 0xfc, 0xd8 ]
+        ]
+
+
+    start <- label
+    prog
+
 emit :: IO ()
 emit = do
-    let prog = org 0x0100 mdo
-            jp start
-
-            -- Pad to 4 bytes before header
-            db [0x00]
-
-            -- Header
-            db $ take (0x050 - 4) . (<> repeat 0x00) . mconcat $
-                -- Boot logo
-                [ [ 0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c, 0x00, 0x0d
-                  , 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6, 0xdd, 0xdd, 0xd9, 0x99
-                  , 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e
-                  ]
-                -- Game title
-                , replicate 16 0x00
-
-                -- New licensee code
-                , [ 0x00, 0x00 ]
-
-                -- SGB flag
-                , [ 0x00 ]
-
-                -- Cartridge type
-                , [ 0x00 ]
-
-                -- ROM size
-                , [ 0x00 ]
-
-                -- RAM size
-                , [ 0x00 ]
-
-                -- Destination code
-                , [ 0x00 ]
-
-                -- Old licensee code
-                , [ 0x00 ]
-
-                -- Mask ROM version number
-                , [ 0x00 ]
-
-                -- TODO: header checksum
-                , [ 0xe7 ]
-
-                -- TODO: global checksum
-                , [ 0xfc, 0xd8 ]
-                ]
-
-
-            start <- label
+    let prog = withHeader mdo
             -- di
             withLabel \waitVBlank -> do
                 ldh A [0x44]
