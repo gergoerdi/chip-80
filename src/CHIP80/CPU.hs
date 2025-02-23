@@ -15,7 +15,7 @@ import Data.Foldable
 
 data Platform = Platform
     { baseAddr :: Location
-    , spritePre :: Location
+    , spritePre :: Location -- ^ Called with X coordinate in `A`, Y coordinate in `C`, height in `B`
     , spritePost :: Location
     , clearScreen :: Location
     , readKeys :: Maybe Location
@@ -526,16 +526,16 @@ cpu Platform{..} = mdo
             -- At this point, we have X coordinate in `A`, Y coordinate in `C`, and sprite height in `B`
             call spritePre
 
-            -- Calculate target offset
+            -- Calculate target offset into `HL`
             push AF
             ld H 0
             replicateM_ 3 $ sla C
             replicateM_ 3 $ srl A
             add A C
             ld L A
+            pop AF
 
             -- Calculate sub-byte bit offset
-            pop AF
             Z80.and 0b111
 
             ld IX [ptr]
@@ -545,6 +545,7 @@ cpu Platform{..} = mdo
             let pixelByte :: (Load A r) => r -> Z80ASM
                 pixelByte r = do
                     push HL
+                    -- `HL += vidBuf`
                     push DE
                     ld DE vidBuf
                     add HL DE
