@@ -34,6 +34,66 @@ blitAllTiles tilebuf = do
             inc DE
             inc DE
 
+-- | Pre: `A` contains X coordinate, `C` contains Y coordinate
+--   Post: `HL` contains tilebuf starting address, `DE` contains tile data starting address
+prepareDirtyTiles :: Location -> Z80ASM
+prepareDirtyTiles tilebuf = do
+    -- CHIP-80 coordinate system: 64x32 = 8x32 * 8x1 (row of 8 pixels / byte)
+    -- Tilemap coordinate system: 128x64 = 16x8 * 8x8
+    --
+    -- Tilemap:
+    --
+    -- 0x00 0x01 ... 0x0f
+    -- 0x10 0x11 ... 0x1f
+    -- ...
+    -- 0x70 0x71 ... 0x7f
+    --
+    -- Each 2x2 "supertile" contains 8x8 CHIP-8 pixels.
+    --
+    -- CHIP-80 tile index = Y << 3 | X / 8
+    -- GB tile index = (Y / 4) << 4 | X / 4
+    --
+    -- Starting from there, we invalidate 4x(height / 2) tiles
+
+    -- Calculate tile index into E
+    replicateM_ 2 $ srl A -- A /= 4
+    replicateM_ 2 $ srl C -- C /= 4
+    replicateM_ 4 $ sla C -- C <<= 4
+    add A C
+    ld E A
+
+    -- Calculate offset = 16 * E into DE
+    ld D 0x00
+    replicateM_ 4 do
+        sla E
+        rl D
+
+    -- Calculate source HL = tilebuf + offset
+    ld HL tilebuf
+    add HL DE
+
+    -- Calculate target DE = 0x9000 + offset
+    ld A D
+    add A 0x90
+    ld D A
+
+
+-- | Pre: stack contains five start addresses of five tilebuf rows
+--   This needs to be fast...
+blitDirtyTiles :: Z80ASM
+blitDirtyTiles = do
+    -- Copy five tiles vertically
+    decLoopB 5 do
+        pop DE
+        pop HL
+
+        -- Copy three tiles horizontally
+        decLoopC 3 $ replicateM_ 8 do
+            ld A [HLi]
+            ld [DE] A
+            inc DE
+            inc DE
+
 renderToTiles :: Location -> Location -> Z80ASM
 renderToTiles vidbuf tilebuf = do
     ld HL tilebuf

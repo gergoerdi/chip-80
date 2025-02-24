@@ -143,19 +143,79 @@ emit = do
             renderToTiles vidbuf tilebuf
             blitAllTiles tilebuf
 
+            -- TEMP: Set tilebuf to all black, so we can see the effect of blitDirtyTiles
+            ld A 0xff
+            ld HL tilebuf
+            decLoopB 256 do
+                decLoopC 8 do
+                    ld [HLi] A
+
             -- Turn on LCD
             ldhVia A [0x40] 0b1000_0001
 
             ldhVia A [0x47] 0b1110_0100
+
+            ld HL curX
+            ld [HL] 0x0
+            ld HL curY
+            ld [HL] 0x00
+
             loopForever do
-                nop
+                decLoopB 6 do
+                    withLabel \waitVBlank -> do
+                        ldh A [0x44]
+                        cp 144
+                        jr NZ waitVBlank
+                    withLabel \waitVBlank -> do
+                        ldh A [0x44]
+                        cp 144
+                        jr Z waitVBlank
 
+                ldVia A B 15
 
+                ld HL curX
+                ld A [HL]
+                inc [HL]
 
+                ld HL curY
+                ld C [HL]
+                -- inc [HL]
+
+                cp 32
+                unlessFlag NZ $ loopForever nop
+
+                prepareDirtyTiles tilebuf
+                ld BC (16 * 8)
+
+                push HL
+                push DE
+                replicateM_ 4 do
+                    -- HL += BC
+                    add HL BC
+                    push HL
+
+                    -- DE += 2 * bc
+                    push HL
+                    push DE; pop HL
+                    add HL BC
+                    add HL BC
+                    push HL; pop DE
+                    pop HL
+                    push DE
+
+                withLabel \waitVBlank -> do
+                    ldh A [0x44]
+                    cp 144
+                    jr NZ waitVBlank
+
+                blitDirtyTiles
 
             picdata <- labelled $ db $ mconcat picture
             let vidbuf = 0xc000
+                curX = vidbuf + 0x0800
+                curY = curX + 1
             let tilebuf = 0xd000
+
             pure ()
 
     let name = "_build/chip80-gameboy"
