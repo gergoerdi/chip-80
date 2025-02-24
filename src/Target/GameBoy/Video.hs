@@ -22,12 +22,12 @@ decLoopC n body = do
         dec C
         jp NZ loop
 
-blitTiles :: Location -> Z80ASM
-blitTiles tilebuf = do
+blitAllTiles :: Location -> Z80ASM
+blitAllTiles tilebuf = do
     ld HL tilebuf
     ld DE 0x9000
 
-    decLoopB 128 do
+    decLoopB 0x80 do
         decLoopC 8 do
             ld A [HLi]
             ld [DE] A
@@ -39,17 +39,16 @@ renderToTiles vidbuf tilebuf = do
     ld HL tilebuf
     ld DE vidbuf
 
-    -- 4 double rows of tiles
-    decLoopC 4 do
+    -- 32 doubled pixel rows total, over 8 tiles
+    decLoopB 8 do
+        push BC
         push HL
 
-        -- 8 pixel lines per tile
-        decLoopB 8 do
-            push BC
-
+        -- One tile row: 4 vertically doubled pixel rows
+        decLoopB 4 do
             push HL
 
-            -- 8 double tiles per row
+            -- One pixel row: 8 doubled tiles
             decLoopC 8 do
                 push BC
 
@@ -57,8 +56,7 @@ renderToTiles vidbuf tilebuf = do
                 inc DE
 
                 replicateM_ 2 do
-                    -- Spread high nybble into C
-                    ld C 0
+                    -- Spread one nybble of A into C
                     decLoopB 4 do
                         rla
                         push AF
@@ -66,28 +64,23 @@ renderToTiles vidbuf tilebuf = do
                         pop AF
                         rl C
 
+                    -- Store C twice to double vertically
                     push AF
                     ld A C
                     ld [HLi] A
                     ld [HL] A
-
-                    -- Add 14 to HL to jump to next tile
-                    ld A L
-                    add A (16 - 1)
-                    ld L A
-                    unlessFlag NC $ inc H
                     pop AF
+
+                    -- Jump to the same row of the next tile
+                    ld BC (8 - 1)
+                    add HL BC
 
                 pop BC
 
-            -- End of row: go back to next line of first tile
             pop HL
             replicateM_ 2 $ inc HL
 
-            pop BC
-
-        -- End of tile row: go to first line of next row
         pop HL
-        ld A H
-        add A 0x01
-        ld H A
+        ld BC (16 * 8)
+        add HL BC
+        pop BC

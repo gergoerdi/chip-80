@@ -105,32 +105,30 @@ emit = do
 
             -- Tilemap
             ld HL 0x9800
-            ld A 0x00
-            decLoopC 4 do
-                replicateM_ 2 do
-                    push AF
 
-                    let cols = 16
-                    decLoopB cols do
-                        ld [HLi] A
-                        inc A
-                        inc A
-
-                    ld A 0x80
-                    decLoopB (32 - cols) do
-                        ld [HLi] A
-
-                    pop AF
-                    inc A
-                add A 30
-
+            -- Fill screen with 0x80
+            let tilemapW, tilemapH :: (Num a) => a
+                tilemapW = 32
+                tilemapH = 32
             ld A 0x80
-            decLoopC (32 - 16) do
-                ld B 32
-                withLabel \loop -> do
+            decLoopC tilemapH do
+                decLoopB tilemapW do
                     ld [HLi] A
-                    dec B
-                    jp NZ loop
+
+            -- Fill CHIP-80 area with 0x00..0x7f
+            let visibleW = 20
+                visibleH = 18
+                chipW, chipH :: (Integral a) => a
+                chipW = (64 * 2) `div` 8
+                chipH = (32 * 2) `div` 8
+            ld HL $ 0x9800 + (((visibleH - chipH) `div` 2) - 4) * tilemapW + (visibleW - chipW) `div` 2
+            ld A 0x00
+            ld DE (tilemapW - chipW)
+            decLoopC chipH do
+                decLoopB chipW do
+                    ld [HLi] A
+                    inc A
+                add HL DE
 
             -- Reset scrolling
             ldhVia A [0x43] 0
@@ -142,21 +140,17 @@ emit = do
             ld BC $ 64 * 32 `div` 8
             copyHLtoDE
 
+            renderToTiles vidbuf tilebuf
+            blitAllTiles tilebuf
+
             -- Turn on LCD
             ldhVia A [0x40] 0b1000_0001
 
             ldhVia A [0x47] 0b1110_0100
             loopForever do
-                renderToTiles vidbuf tilebuf
+                nop
 
-                withLabel \waitVBlank -> do
-                    ldh A [0x44]
-                    cp 144
-                    jr NZ waitVBlank
 
-                -- ldhVia A [0x40] 0b0000_0000
-                blitTiles tilebuf
-                -- ldhVia A [0x40] 0b1000_0001
 
 
             picdata <- labelled $ db $ mconcat picture
